@@ -6,26 +6,7 @@
 @import '@fontsource/be-vietnam-pro/latin-600.css';
 @import 'tailwindcss';
 
-@theme inline {
-  --color-background: #fbfaf7;
-  --color-foreground: #293831;
-  --color-primary: #314e42;
-  --color-primary-foreground: #ffffff;
-  --color-muted: #f0f0eb;
-  --color-muted-foreground: #777e77;
-  --color-border: #e4e6de;
-  --color-ring: #6b917d;
-  --color-card: #ffffff;
-  --color-card-foreground: #293831;
-  --color-secondary: #eef1ea;
-  --color-secondary-foreground: #314e42;
-  --color-accent: #eef1ea;
-  --color-accent-foreground: #314e42;
-  --color-destructive: #b33f3f;
-  --color-input: #e4e6de;
-  --color-popover: #ffffff;
-  --color-popover-foreground: #293831;
-}
+@import './tokens.css';
 
 body {
   margin: 0;

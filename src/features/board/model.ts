@@ -1,21 +1,16 @@
 import { z } from 'zod'
 
-export const statuses = ['todo', 'doing', 'review', 'done'] as const
-export type Status = (typeof statuses)[number]
-export const columns: { id: Status; label: string; color: string }[] = [
-  { id: 'todo', label: 'Cần làm', color: '#9ba6ae' },
-  { id: 'doing', label: 'Đang làm', color: '#cf9852' },
-  { id: 'review', label: 'Chờ kiểm tra', color: '#9a87bf' },
-  { id: 'done', label: 'Hoàn thành', color: '#669b82' },
-]
+import { statuses, priorities, taskLimits } from './config'
+import { appConfig } from '@/config/app'
+export { statuses, columns, priorityLabels, type Status } from './config'
 
 export const taskSchema = z.object({
   id: z.string().min(1),
-  title: z.string().trim().min(1).max(120),
-  description: z.string().max(2000),
+  title: z.string().trim().min(1).max(taskLimits.title),
+  description: z.string().max(taskLimits.description),
   status: z.enum(statuses),
-  priority: z.enum(['low', 'medium', 'high']),
-  assignee: z.string().max(60),
+  priority: z.enum(priorities),
+  assignee: z.string().max(taskLimits.assignee),
   dueDate: z
     .string()
     .refine((value) => !value || /^\d{4}-\d{2}-\d{2}$/.test(value)),
@@ -23,11 +18,9 @@ export const taskSchema = z.object({
 export type Task = z.infer<typeof taskSchema>
 export type TaskInput = Omit<Task, 'id'>
 export const boardSchema = z.object({
-  version: z.literal(1),
+  version: z.literal(appConfig.storage.boardVersion),
   tasks: z.array(taskSchema),
 })
-
-export const priorityLabels = { low: 'Thấp', medium: 'Vừa', high: 'Cao' }
 
 export function createSeed(): Task[] {
   return [
