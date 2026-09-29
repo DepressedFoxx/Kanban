@@ -1,0 +1,77 @@
+# Kanban · Không gian làm việc cho nhóm nhỏ
+
+Starter Vue 3 chạy local, hướng đến Kanban cộng tác cho freelancer. Bản 0.1 tập trung vào board và cấu trúc code dễ học.
+
+## Yêu cầu dự án và trạng thái
+
+**Bản hiện tại là M0 — starter/prototype local, chưa phải MVP cộng tác.**
+
+Đọc **[Yêu cầu dự án (PRD)](docs/requirements.md)** trước khi triển khai tiếp. Tài liệu bao gồm phạm vi MVP, phân quyền, luồng người dùng, quy tắc dữ liệu, tiêu chí nghiệm thu và đối chiếu với code hiện có.
+
+Các mốc thống nhất: M0 local → M1 auth và lưu online có cách ly dữ liệu → M2 nhóm và phân quyền → M3 realtime, xử lý xung đột và nghiệm thu MVP. Các chi tiết chưa trao đổi riêng được ghi là đề xuất làm việc trong PRD.
+
+## Chạy dự án
+
+Node.js 24 LTS, npm. Trong PowerShell:
+
+```powershell
+cd C:\Users\Vitech\Documents\personal\Kanban
+npm.cmd install
+npm.cmd run dev
+```
+
+Mở URL Vite in ra, mặc định http://127.0.0.1:5173. Từ lần sau chỉ cần `npm.cmd run dev`.
+
+## Đã hoạt động
+
+- Board 4 cột, dữ liệu mẫu; tạo, sửa, xóa (xác nhận hai lần).
+- Kéo thả bằng tay nắm, sắp xếp và di chuyển giữa cột.
+- Menu đổi trạng thái dùng được bằng bàn phím và trên mobile.
+- Tìm kiếm tiêu đề/mô tả/người phụ trách, lọc ưu tiên.
+- LocalStorage lưu task và thứ tự qua tải lại trang; thông báo lỗi đọc/ghi.
+- Form dialog dùng Reka UI, focus trap và Escape; layout responsive.
+- Pinia, Vue Router, Tailwind 4, font Be Vietnam Pro được bundle local.
+- Cấu hình shadcn-vue (`components.json`), Button local tối giản, có thể thêm component theo registry sau. Không phải toàn bộ bộ shadcn đã được generate.
+- Typecheck, kiểm thử store/storage, Prettier và CI.
+
+## Giới hạn hiện tại
+
+Chưa có auth, workspace thật, database, lời mời, phân quyền, realtime, đồng bộ nhiều tab, activity log hoặc giải quyết xung đột. “Studio nhỏ” là workspace mẫu; người phụ trách là chuỗi văn bản. Không phải bản SaaS hoàn chỉnh.
+
+Dữ liệu chỉ nằm ở trình duyệt hiện tại (key `kanban.board.v1`). Xóa dữ liệu website sẽ mất board. Khi đang lọc, kéo thả tạm tắt để tránh ghi sai thứ tự; menu chuyển trạng thái vẫn dùng được.
+
+## Cấu trúc
+
+```text
+src/
+  assets/main.css          Theme, Tailwind, font, responsive
+  components/board/        Cột, thẻ và form dialog
+  components/ui/button/    Button dùng chung
+  features/board/model.ts  Type, validation Zod, dữ liệu mẫu
+  features/board/storage.ts Đọc/ghi localStorage
+  stores/board.ts          Nơi cập nhật state và lưu thay đổi
+  lib/supabase.ts          Client tùy chọn cho giai đoạn sau
+  router/index.ts         Route /board và /guide
+  views/                  Trang ghép các component
+```
+
+## Kiểm tra
+
+```powershell
+npm.cmd run typecheck
+npm.cmd test
+npm.cmd run build
+npm.cmd run format:check
+```
+
+`npm.cmd run format` tự format source. Đọc [luồng hoạt động và bài tập](docs/learning-guide.md), [kiến trúc và lộ trình](docs/architecture.md), [checklist thủ công](docs/manual-checks.md).
+
+## Nối Supabase ở giai đoạn sau
+
+Sao chép `.env.example` thành `.env.local`, điền URL và publishable key. Client nằm ở `src/lib/supabase.ts`; board **chưa gọi client này**. Chỉ thêm env không bật auth hoặc sync.
+
+Trước khi đưa dữ liệu người dùng lên Supabase: thiết kế migrations, grants/RLS, kiểm thử truy cập giữa workspace, rồi thay lớp lưu local bằng các thao tác database. Không đặt secret/service-role key trong `VITE_*` vì chúng được bundle vào frontend. Xem `docs/architecture.md`.
+
+## Triển khai
+
+Build command: `npm run build`; output: `dist`. Host SPA cần fallback các route về `index.html`. Khi dùng Supabase Auth sau này, cấu hình redirect URL riêng cho local và production. Chưa có deployment được tạo từ starter này.

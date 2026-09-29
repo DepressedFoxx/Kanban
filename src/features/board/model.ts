@@ -1,0 +1,90 @@
+import { z } from 'zod'
+
+export const statuses = ['todo', 'doing', 'review', 'done'] as const
+export type Status = (typeof statuses)[number]
+export const columns: { id: Status; label: string; color: string }[] = [
+  { id: 'todo', label: 'Cần làm', color: '#9ba6ae' },
+  { id: 'doing', label: 'Đang làm', color: '#cf9852' },
+  { id: 'review', label: 'Chờ kiểm tra', color: '#9a87bf' },
+  { id: 'done', label: 'Hoàn thành', color: '#669b82' },
+]
+
+export const taskSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().trim().min(1).max(120),
+  description: z.string().max(2000),
+  status: z.enum(statuses),
+  priority: z.enum(['low', 'medium', 'high']),
+  assignee: z.string().max(60),
+  dueDate: z
+    .string()
+    .refine((value) => !value || /^\d{4}-\d{2}-\d{2}$/.test(value)),
+})
+export type Task = z.infer<typeof taskSchema>
+export type TaskInput = Omit<Task, 'id'>
+export const boardSchema = z.object({
+  version: z.literal(1),
+  tasks: z.array(taskSchema),
+})
+
+export const priorityLabels = { low: 'Thấp', medium: 'Vừa', high: 'Cao' }
+
+export function createSeed(): Task[] {
+  return [
+    {
+      id: 'seed-1',
+      title: 'Phác thảo luồng làm việc của nhóm',
+      description:
+        'Xác định các bước từ ý tưởng đến bàn giao. Viết rõ tiêu chí hoàn thành.',
+      status: 'todo',
+      priority: 'high',
+      assignee: 'Minh',
+      dueDate: '',
+    },
+    {
+      id: 'seed-2',
+      title: 'Chuẩn bị nội dung trang giới thiệu',
+      description: 'Một câu giới thiệu, ba lợi ích và lời mời dùng thử.',
+      status: 'todo',
+      priority: 'medium',
+      assignee: 'Linh',
+      dueDate: '',
+    },
+    {
+      id: 'seed-3',
+      title: 'Thiết kế trải nghiệm bảng công việc',
+      description: 'Ưu tiên khả năng đọc, thao tác nhanh và màn hình nhỏ.',
+      status: 'doing',
+      priority: 'high',
+      assignee: 'An',
+      dueDate: '',
+    },
+    {
+      id: 'seed-4',
+      title: 'Hoàn thiện bộ màu và typography',
+      description: 'Kiểm tra dấu tiếng Việt và độ tương phản.',
+      status: 'doing',
+      priority: 'low',
+      assignee: 'Linh',
+      dueDate: '',
+    },
+    {
+      id: 'seed-5',
+      title: 'Kiểm tra form tạo công việc',
+      description: 'Không cho lưu tiêu đề trống; giữ bản nháp khi đang sửa.',
+      status: 'review',
+      priority: 'medium',
+      assignee: 'Minh',
+      dueDate: '',
+    },
+    {
+      id: 'seed-6',
+      title: 'Thống nhất mục tiêu dự án',
+      description: 'Một bảng công việc rõ ràng cho nhóm freelancer nhỏ.',
+      status: 'done',
+      priority: 'low',
+      assignee: 'An',
+      dueDate: '',
+    },
+  ]
+}
