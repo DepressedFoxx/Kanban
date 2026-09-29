@@ -2,7 +2,7 @@
 
 Ngày lập: 2026-09-29. Phiên bản tài liệu: 0.1.
 
-**Trạng thái sản phẩm: starter/prototype local, chưa đạt MVP cộng tác.**
+**Trạng thái sản phẩm: board local + module Auth của M1; cần cấu hình/kiểm thử Supabase thật, chưa đạt M1 hoặc MVP cộng tác.**
 
 Tài liệu này cụ thể hóa ý tưởng đã trao đổi thành phạm vi phát triển và tiêu chí nghiệm thu. Các quyết định chi tiết như quyền xóa, thời hạn lời mời và giới hạn MVP bên dưới là đề xuất làm việc ban đầu, có thể điều chỉnh; không phải tính năng đã triển khai hoặc quyết định đã được người dùng duyệt riêng.
 
@@ -141,15 +141,15 @@ Không cần thêm các mục này để gọi M3 là MVP. Production có ngư�
 
 ## 9. Hiện trạng so với yêu cầu
 
-| Nhóm           | Hiện tại                                                   | Thiếu để đạt MVP                                               |
-| -------------- | ---------------------------------------------------------- | -------------------------------------------------------------- |
-| Board/task     | Một board mẫu, 4 cột, CRUD local, kéo thả, tìm/lọc ưu tiên | Nhiều board online, archive, assignee membership, lọc assignee |
-| Persistence    | localStorage có validation và lỗi lưu                      | DB, migrations, transaction và đồng bộ thiết bị                |
-| Auth/workspace | Chỉ tên workspace mẫu                                      | Toàn bộ AUTH/WS và isolation                                   |
-| Thành viên     | Tên assignee văn bản                                       | Invite, role, chính sách truy cập                              |
-| Cộng tác       | Chưa có                                                    | Comment, activity, realtime và conflict                        |
-| UI             | Responsive, dialog, menu đổi trạng thái                    | Các màn hình online và trạng thái lỗi backend                  |
-| Kiểm thử       | 7 test store/storage; browser checks trong verification.md | RLS, integration, E2E nhiều tài khoản và concurrency           |
+| Nhóm           | Hiện tại                                                    | Thiếu để đạt MVP                                               |
+| -------------- | ----------------------------------------------------------- | -------------------------------------------------------------- |
+| Board/task     | Một board mẫu, 4 cột, CRUD local, kéo thả, tìm/lọc ưu tiên  | Nhiều board online, archive, assignee membership, lọc assignee |
+| Persistence    | localStorage có validation và lỗi lưu                       | DB, migrations, transaction và đồng bộ thiết bị                |
+| Auth/workspace | Module Auth đã có source; xem auth.md. Workspace còn là mẫu | Kiểm thử Auth với Supabase thật, WS và isolation database      |
+| Thành viên     | Tên assignee văn bản                                        | Invite, role, chính sách truy cập                              |
+| Cộng tác       | Chưa có                                                     | Comment, activity, realtime và conflict                        |
+| UI             | Responsive, dialog, menu đổi trạng thái                     | Các màn hình online và trạng thái lỗi backend                  |
+| Kiểm thử       | 7 test store/storage; browser checks trong verification.md  | RLS, integration, E2E nhiều tài khoản và concurrency           |
 
 ## 10. Kịch bản nghiệm thu MVP
 

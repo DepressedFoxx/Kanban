@@ -1,6 +1,6 @@
 # Kiến trúc và lộ trình
 
-Phạm vi sản phẩm và tiêu chí nghiệm thu nằm trong [Yêu cầu dự án](requirements.md). Bản hiện tại là M0 local. M1/M2/M3 dưới đây là mốc triển khai; MVP cộng tác hoàn thành ở M3, sau khi đạt các kịch bản nghiệm thu.
+Phạm vi sản phẩm và tiêu chí nghiệm thu nằm trong [Yêu cầu dự án](requirements.md). Board hiện vẫn local; phần Auth của M1 đã có source, xem [module auth](auth.md). M1/M2/M3 dưới đây là mốc triển khai; MVP cộng tác hoàn thành ở M3, sau khi đạt các kịch bản nghiệm thu.
 
 ## Bản local hiện tại
 
@@ -25,7 +25,7 @@ Store là nguồn dữ liệu chung; form là bản nháp riêng. Component khô
 - `board.ts`: điều phối nghiệp vụ và quyền sở hữu state.
 - `BoardColumn`: adapter giữa v-model của thư viện kéo thả và action store.
 - `TaskDialog`: bản nháp, validation giao diện; Zod ở store là lớp kiểm tra cuối của bản local.
-- `lib/supabase.ts`: điểm tích hợp có sẵn nhưng chưa thực thi auth/database.
+- `lib/supabase.ts`: client thực thi Supabase Auth; database task chưa triển khai.
 
 ## M1: lưu online và xác thực
 
