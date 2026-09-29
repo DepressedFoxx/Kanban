@@ -1,7 +1,18 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Plus, Search, SlidersHorizontal, ArrowUpRight } from '@lucide/vue'
-import Button from '@/components/ui/button/Button.vue'
+
+import { Plus, Search, ArrowUpRight } from '@lucide/vue'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { priorities, priorityLabels } from '@/features/board/config'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+
 import BoardColumn from '@/components/board/BoardColumn.vue'
 import TaskDialog from '@/components/board/TaskDialog.vue'
 import { columns, type Status, type Task } from '@/features/board/model'
@@ -9,7 +20,7 @@ import { useBoardStore } from '@/stores/board'
 
 const board = useBoardStore()
 const query = ref('')
-const priority = ref('')
+const priority = ref('all')
 const open = ref(false)
 const selectedTask = ref<Task | null>(null)
 const initialStatus = ref<Status>('todo')
@@ -31,7 +42,7 @@ function edit(task: Task) {
 }
 function clearFilters() {
   query.value = ''
-  priority.value = ''
+  priority.value = 'all'
 }
 </script>
 
@@ -103,33 +114,31 @@ function clearFilters() {
       </div>
       <div class="flex w-full flex-wrap gap-2 sm:w-auto">
         <label class="search-field"
-          ><Search :size="16" /><input
+          ><Search :size="16" /><Input
             v-model="query"
             aria-label="Tìm công việc"
             placeholder="Tìm công việc, thành viên…"
         /></label>
-        <label
-          class="flex items-center gap-2 rounded-lg border border-border bg-white px-3"
-          ><SlidersHorizontal :size="14" /><select
-            v-model="priority"
-            aria-label="Lọc ưu tiên"
-            class="min-h-10 bg-transparent text-xs"
-          >
-            <option value="">Mọi ưu tiên</option>
-            <option value="high">Ưu tiên cao</option>
-            <option value="medium">Ưu tiên vừa</option>
-            <option value="low">Ưu tiên thấp</option>
-          </select></label
+        <Select v-model="priority"
+          ><SelectTrigger class="w-full sm:w-44" aria-label="Lọc ưu tiên"
+            ><SelectValue /></SelectTrigger
+          ><SelectContent
+            ><SelectItem value="all">Mọi ưu tiên</SelectItem
+            ><SelectItem v-for="value in priorities" :key="value" :value="value"
+              >Ưu tiên
+              {{ priorityLabels[value].toLocaleLowerCase('vi') }}</SelectItem
+            ></SelectContent
+          ></Select
         >
       </div>
     </div>
     <p
-      v-if="query.trim() || priority"
+      v-if="query.trim() || priority !== 'all'"
       class="mb-4 text-xs text-muted-foreground"
     >
       Đang lọc: kéo thả tạm tắt để giữ đúng thứ tự. Bạn vẫn có thể đổi trạng
       thái bằng menu trên thẻ.
-      <button class="underline" @click="clearFilters">Xóa bộ lọc</button>
+      <Button variant="link" @click="clearFilters">Xóa bộ lọc</Button>
     </p>
     <p
       v-if="board.storageError"
@@ -146,7 +155,7 @@ function clearFilters() {
         :label="column.label"
         :color="column.color"
         :query="query"
-        :priority="priority"
+        :priority="priority === 'all' ? '' : priority"
         @add="add"
         @edit="edit"
       />

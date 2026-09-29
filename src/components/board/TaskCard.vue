@@ -1,4 +1,12 @@
 <script setup lang="ts">
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
 import { CalendarDays, GripVertical } from '@lucide/vue'
 import {
   columns,
@@ -12,10 +20,6 @@ const emit = defineEmits<{
   edit: [task: Task]
   move: [id: string, status: Status]
 }>()
-
-function move(event: Event, id: string) {
-  emit('move', id, (event.target as HTMLSelectElement).value as Status)
-}
 </script>
 
 <template>
@@ -31,12 +35,13 @@ function move(event: Event, id: string) {
         ><GripVertical :size="15"
       /></span>
     </div>
-    <button
-      class="block w-full text-left text-sm font-semibold leading-6 hover:text-primary"
+    <Button
+      variant="ghost"
+      class="h-auto whitespace-normal block w-full p-0 text-left text-sm font-semibold leading-6 hover:text-primary"
       @click="emit('edit', task)"
     >
       {{ task.title }}
-    </button>
+    </Button>
     <p
       v-if="task.description"
       class="mt-2 line-clamp-2 text-xs leading-5 text-muted-foreground"
@@ -59,15 +64,19 @@ function move(event: Event, id: string) {
     <label class="sr-only" :for="`move-${task.id}`"
       >Chuyển trạng thái: {{ task.title }}</label
     >
-    <select
-      :id="`move-${task.id}`"
-      :value="task.status"
-      class="mt-3 w-full rounded-md border border-border bg-transparent px-2 py-1.5 text-xs text-muted-foreground"
-      @change="move($event, task.id)"
+    <Select
+      :model-value="task.status"
+      @update:model-value="emit('move', task.id, $event as Status)"
+      ><SelectTrigger :id="`move-${task.id}`" class="mt-3 w-full text-xs"
+        ><SelectValue /></SelectTrigger
+      ><SelectContent
+        ><SelectItem
+          v-for="column in columns"
+          :key="column.id"
+          :value="column.id"
+          >{{ column.label }}</SelectItem
+        ></SelectContent
+      ></Select
     >
-      <option v-for="column in columns" :key="column.id" :value="column.id">
-        {{ column.label }}
-      </option>
-    </select>
   </article>
 </template>

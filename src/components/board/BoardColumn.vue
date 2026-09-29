@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { Button } from '@/components/ui/button'
+import { appConfig } from '@/config/app'
 import { computed } from 'vue'
 import draggable from 'vuedraggable'
 import { Plus } from '@lucide/vue'
@@ -22,8 +24,8 @@ const cards = computed({
       (task) =>
         task.status === props.status &&
         `${task.title} ${task.description} ${task.assignee}`
-          .toLocaleLowerCase('vi')
-          .includes(props.query.trim().toLocaleLowerCase('vi')) &&
+          .toLocaleLowerCase(appConfig.locale)
+          .includes(props.query.trim().toLocaleLowerCase(appConfig.locale)) &&
         (!props.priority || task.priority === props.priority),
     ),
   set: (value: Task[]) => board.reorder(props.status, value),
@@ -43,20 +45,21 @@ const cards = computed({
           >{{ cards.length }}</span
         >
       </h2>
-      <button
+      <Button
+        variant="ghost"
         class="rounded-md p-2 text-muted-foreground hover:bg-white"
         :aria-label="`Thêm vào ${label}`"
         @click="emit('add', status)"
       >
         <Plus :size="16" />
-      </button>
+      </Button>
     </div>
     <draggable
       v-model="cards"
       item-key="id"
       group="tasks"
       handle=".drag-handle"
-      :animation="180"
+      :animation="appConfig.dragAnimationMs"
       :disabled="filtered"
       ghost-class="drag-ghost"
       class="min-h-24 space-y-3 pb-2"
@@ -76,11 +79,12 @@ const cards = computed({
     >
       {{ filtered ? 'Không có kết quả phù hợp' : 'Chưa có công việc' }}
     </p>
-    <button
+    <Button
+      variant="ghost"
       class="flex w-full items-center justify-center gap-2 rounded-lg py-3 text-xs text-muted-foreground hover:bg-white"
       @click="emit('add', status)"
     >
       <Plus :size="14" />Thêm công việc
-    </button>
+    </Button>
   </section>
 </template>
