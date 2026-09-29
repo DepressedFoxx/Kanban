@@ -7,18 +7,31 @@ import {
   type Task,
   type TaskInput,
 } from '@/features/board/model'
-import { loadBoard, saveBoard } from '@/features/board/storage'
+import { STORAGE_KEY, loadBoard, saveBoard } from '@/features/board/storage'
 
 export const useBoardStore = defineStore('board', () => {
   const tasks = ref<Task[]>(createSeed())
   const storageError = ref('')
+  let storageKey: string = STORAGE_KEY
+  let seed = true
+  function setScope(userId: string | null) {
+    storageKey = userId ? STORAGE_KEY + '.' + userId : STORAGE_KEY
+    seed = !userId
+    tasks.value = []
+    storageError.value = ''
+    initialize()
+  }
+  function clear() {
+    tasks.value = []
+    storageError.value = ''
+  }
   const completed = computed(
     () => tasks.value.filter((task) => task.status === 'done').length,
   )
 
   function initialize() {
     try {
-      const result = loadBoard(localStorage)
+      const result = loadBoard(localStorage, storageKey, seed)
       tasks.value = result.tasks
       storageError.value = result.error
     } catch {
@@ -29,7 +42,7 @@ export const useBoardStore = defineStore('board', () => {
 
   function persist() {
     try {
-      saveBoard(localStorage, tasks.value)
+      saveBoard(localStorage, tasks.value, storageKey)
       storageError.value = ''
     } catch {
       storageError.value =
@@ -72,5 +85,15 @@ export const useBoardStore = defineStore('board', () => {
   }
 
   initialize()
-  return { tasks, completed, storageError, save, remove, move, reorder }
+  return {
+    setScope,
+    clear,
+    tasks,
+    completed,
+    storageError,
+    save,
+    remove,
+    move,
+    reorder,
+  }
 })

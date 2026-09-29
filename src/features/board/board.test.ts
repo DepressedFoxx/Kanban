@@ -100,3 +100,28 @@ describe('board behavior', () => {
     expect(board.storageError).not.toBe('')
   })
 })
+
+describe('account storage isolation', () => {
+  it('keeps demo and two account boards separate and clears UI state', () => {
+    const board = useBoardStore()
+    const demoIds = board.tasks.map((task) => task.id)
+    board.setScope('user-a')
+    expect(board.tasks).toHaveLength(0)
+    board.save({
+      title: 'Private A',
+      description: '',
+      status: 'todo',
+      priority: 'low',
+      assignee: '',
+      dueDate: '',
+    })
+    board.setScope('user-b')
+    expect(board.tasks).toHaveLength(0)
+    board.setScope('user-a')
+    expect(board.tasks[0]?.title).toBe('Private A')
+    board.clear()
+    expect(board.tasks).toHaveLength(0)
+    board.setScope(null)
+    expect(board.tasks.map((task) => task.id)).toEqual(demoIds)
+  })
+})
