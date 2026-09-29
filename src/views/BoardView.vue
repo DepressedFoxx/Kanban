@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { appConfig } from '@/config/app'
+import { computed, ref, onBeforeUnmount } from 'vue'
+import { useRoute } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 import { Plus, Search, ArrowUpRight } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
@@ -19,6 +22,10 @@ import { columns, type Status, type Task } from '@/features/board/model'
 import { useBoardStore } from '@/stores/board'
 
 const board = useBoardStore()
+const auth = useAuthStore()
+const route = useRoute()
+board.setScope(route.path === appConfig.routes.demo ? null : auth.user!.id)
+onBeforeUnmount(() => board.clear())
 const query = ref('')
 const priority = ref('all')
 const open = ref(false)
