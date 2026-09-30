@@ -82,7 +82,7 @@ async function logout() {
         >
       </nav>
       <div class="mt-auto hidden pt-12 lg:block">
-        <div class="rounded-xl bg-[#e9eee6] p-4">
+        <div class="rounded-xl bg-secondary p-4">
           <Sprout :size="22" class="text-primary" />
           <p class="mt-3 text-sm font-medium">Từng bước, cùng nhau.</p>
           <p class="mt-2 text-xs leading-5 text-muted-foreground">

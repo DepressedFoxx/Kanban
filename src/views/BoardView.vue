@@ -101,7 +101,7 @@ function clearFilters() {
           aria-label="Tiến độ"
         >
           <div
-            class="h-1 rounded-full bg-[#bad5bc] transition-all"
+            class="h-1 rounded-full bg-white/80 transition-all"
             :style="{ width: `${progress}%` }"
           />
         </div>
