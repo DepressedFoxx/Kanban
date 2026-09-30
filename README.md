@@ -39,7 +39,7 @@ Mở URL Vite in ra, mặc định http://127.0.0.1:5173. Từ lần sau chỉ c
 
 Auth đã có source và cần cấu hình Supabase để kiểm thử thực tế. Chưa có workspace thật, database, lời mời, phân quyền, realtime, đồng bộ nhiều tab, activity log hoặc giải quyết xung đột. “Studio nhỏ” là workspace mẫu; người phụ trách là chuỗi văn bản. Không phải bản SaaS hoàn chỉnh.
 
-Dữ liệu chỉ nằm ở trình duyệt hiện tại (demo: `kanban.board.v1`; tài khoản: `kanban.board.v1.<userId>`). Xóa dữ liệu website sẽ mất board. Khi đang lọc, kéo thả tạm tắt để tránh ghi sai thứ tự; menu chuyển trạng thái vẫn dùng được.
+Dữ liệu chỉ nằm ở trình duyệt hiện tại (tài khoản: `kanban.board.v1.<userId>`). Xóa dữ liệu website sẽ mất board. Khi đang lọc, kéo thả tạm tắt để tránh ghi sai thứ tự; menu chuyển trạng thái vẫn dùng được.
 
 ## Cấu trúc
 
@@ -79,6 +79,14 @@ Trước khi đưa dữ liệu người dùng lên Supabase: thiết kế migrat
 
 Build command: `npm run build`; output: `dist`. Host SPA cần fallback các route về `index.html`. Khi dùng Supabase Auth, cấu hình redirect URL riêng cho local và production. Chưa có deployment được tạo từ starter này.
 
-## Tài khoản
+## Workspace và thành viên
 
-Module Supabase Auth: xem [thiết lập và kiểm thử](docs/auth.md). Cần cấu hình .env.local để đăng nhập thật. /demo hoạt động không cần Supabase; /board và /account yêu cầu phiên đã xác minh email. Board hiện vẫn lưu local theo tài khoản, chưa đồng bộ database.
+Đã có source cho danh sách/tạo workspace, quản lý Owner/Member/Viewer và lời mời bằng link. Cần chạy [migration](supabase/migrations/202609300001_workspaces.sql) trên Supabase trước khi dùng. Xem [thiết lập, phân quyền và kiểm chứng](docs/workspaces.md). Board vẫn lưu local và chưa gắn với workspace.
+
+## Thiết lập tài khoản
+
+Module Supabase Auth: xem [thiết lập và kiểm thử](docs/auth.md). Cần cấu hình .env.local để đăng nhập thật. /board và /account yêu cầu phiên đã xác minh email. Board hiện vẫn lưu local theo tài khoản, chưa đồng bộ database.
+
+## Board online trong workspace
+
+Module board/task đã lưu trên Supabase với phân quyền, lưu trữ/khôi phục, kiểm soát phiên bản và retry an toàn. Xem [setup, kiến trúc và kiểm thử board](docs/boards.md). Mở Workspace & board để bắt đầu. Board cá nhân local được giữ tại `/personal-board`; `/board` chuyển về danh sách workspace. Chưa có realtime/comment/activity.

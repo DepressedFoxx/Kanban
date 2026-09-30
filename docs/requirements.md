@@ -2,7 +2,7 @@
 
 Ngày lập: 2026-09-29. Phiên bản tài liệu: 0.1.
 
-**Trạng thái sản phẩm: board local + module Auth của M1; cần cấu hình/kiểm thử Supabase thật, chưa đạt M1 hoặc MVP cộng tác.**
+**Cập nhật 2026-09-30: Auth, workspace/thành viên và board/task online đã có source và migration. Đã kiểm tra cloud bằng tài khoản Owner; chưa nghiệm thu nhiều tài khoản hoặc MVP cộng tác. Xem boards.md.**
 
 Tài liệu này cụ thể hóa ý tưởng đã trao đổi thành phạm vi phát triển và tiêu chí nghiệm thu. Các quyết định chi tiết như quyền xóa, thời hạn lời mời và giới hạn MVP bên dưới là đề xuất làm việc ban đầu, có thể điều chỉnh; không phải tính năng đã triển khai hoặc quyết định đã được người dùng duyệt riêng.
 
@@ -53,7 +53,7 @@ MVP trong tài liệu này là **M3**, không đồng nghĩa với bản UI ch�
 ### TASK — Công việc
 
 - TASK-01: tạo/sửa task gồm tiêu đề 1–120 ký tự sau trim, mô tả tối đa 2.000 ký tự, ưu tiên thấp/vừa/cao, một người phụ trách tùy chọn, một hạn hoàn thành tùy chọn.
-- TASK-02: assignee phải là thành viên hiện tại của workspace; tên gõ tự do chỉ tồn tại ở demo local. Gỡ thành viên thì bỏ gán các task đang giao cho người đó, giữ lịch sử.
+- TASK-02: assignee phải là thành viên hiện tại của workspace; tên gõ tự do hiện chỉ tồn tại ở board cá nhân local. Gỡ thành viên thì bỏ gán các task đang giao cho người đó, giữ lịch sử.
 - TASK-03: form dùng bản nháp. Hủy không ghi; lỗi server giữ dữ liệu nhập và cho thử lại. Client và server/database đều kiểm tra đầu vào.
 - TASK-04: kéo trong cột và giữa cột; có thao tác menu cho bàn phím/mobile. Khi đang lọc, tắt kéo thả và giải thích; menu chuyển trạng thái vẫn hoạt động.
 - TASK-05: thứ tự và cột được lưu nguyên tử. Không mất/nhân đôi task; thao tác trên danh sách lọc không được ghi đè toàn cột bằng tập con.
@@ -121,7 +121,7 @@ Mỗi tài khoản được tự tạo workspace mới; Owner trong workspace A 
 - comments, activity_events: liên kết task/board, actor và thời điểm do server xác nhận.
 - mutation receipts hoặc cơ chế tương đương: chống thực thi trùng cùng mutationId.
 
-Mọi liên kết task → cột → board → workspace phải nhất quán bằng constraint/transaction và authorization, không chỉ kiểm tra frontend. Supabase client đã có trong source nhưng chưa có migrations, policy hoặc RPC được triển khai. Đây là mô hình mục tiêu, chưa phải schema đang chạy.
+Mọi liên kết task → cột → board → workspace phải nhất quán bằng constraint/transaction và authorization, không chỉ kiểm tra frontend. Workspace và board/task đã có migration, RLS và RPC. Comment, activity và realtime vẫn là mô hình mục tiêu.
 
 ## 7. Yêu cầu chất lượng
 
@@ -141,15 +141,11 @@ Không cần thêm các mục này để gọi M3 là MVP. Production có ngư�
 
 ## 9. Hiện trạng so với yêu cầu
 
-| Nhóm           | Hiện tại                                                    | Thiếu để đạt MVP                                               |
-| -------------- | ----------------------------------------------------------- | -------------------------------------------------------------- |
-| Board/task     | Một board mẫu, 4 cột, CRUD local, kéo thả, tìm/lọc ưu tiên  | Nhiều board online, archive, assignee membership, lọc assignee |
-| Persistence    | localStorage có validation và lỗi lưu                       | DB, migrations, transaction và đồng bộ thiết bị                |
-| Auth/workspace | Module Auth đã có source; xem auth.md. Workspace còn là mẫu | Kiểm thử Auth với Supabase thật, WS và isolation database      |
-| Thành viên     | Tên assignee văn bản                                        | Invite, role, chính sách truy cập                              |
-| Cộng tác       | Chưa có                                                     | Comment, activity, realtime và conflict                        |
-| UI             | Responsive, dialog, menu đổi trạng thái                     | Các màn hình online và trạng thái lỗi backend                  |
-| Kiểm thử       | 7 test store/storage; browser checks trong verification.md  | RLS, integration, E2E nhiều tài khoản và concurrency           |
+- Auth/workspace: có Supabase Auth, tạo workspace, membership và lời mời. Cloud đã kiểm tra với Owner; chưa hoàn thành luồng nhiều tài khoản.
+- Board/task: nhiều board online, task CRUD qua RPC, assignee membership, tìm/lọc, drag-and-drop, archive/restore, kiểm soát phiên bản và retry. Xem [module board](boards.md).
+- Board cá nhân cũ: localStorage tại `/personal-board`, giữ nguyên dữ liệu cũ; không tự import online.
+- Cộng tác: chưa có comment, activity và realtime. Hiện tải lại định kỳ, chưa đạt M3.
+- Kiểm thử: 69 test local, gồm SQL/RLS và UI/store; cloud Owner đã kiểm tra các thao tác board/task chính. Không đồng nghĩa nghiệm thu concurrent writes nhiều connection hoặc nhiều tài khoản.
 
 ## 10. Kịch bản nghiệm thu MVP
 

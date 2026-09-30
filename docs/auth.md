@@ -11,10 +11,10 @@ Tên hiển thị lưu trong auth user_metadata.display_name bằng updateUser, 
 1. Tạo Supabase project, bật Email provider và Confirm email.
 2. Copy .env.example thành .env.local; điền VITE_SUPABASE_URL và VITE_SUPABASE_PUBLISHABLE_KEY bằng project URL và publishable key. Không điền secret/service_role key. Restart npm run dev sau khi sửa env.
 3. Auth → URL Configuration: Site URL là http://127.0.0.1:5173. Thêm redirect URL chính xác http://127.0.0.1:5173/auth/callback và http://127.0.0.1:5173/reset-password. Nếu dùng localhost thay vì 127.0.0.1 thì thêm riêng cả hai URL tương ứng. Production dùng origin HTTPS thật và SPA fallback về index.html.
-4. Giữ email template sử dụng ConfirmationURL của Supabase. App hiện dùng implicit flow cho SPA; SDK nhận và xóa token fragment, không tự ghi/log token. Không đổi template sang token_hash/PKCE khi chưa cập nhật callback.
+4. Giữ email template sử dụng ConfirmationURL của Supabase. App hiện dùng implicit flow cho SPA; SDK nhận và xóa token fragment, không tự ghi/log token. Không đổi template tiếpsang token_hash/PKCE khi chưa cập nhật callback.
 5. Cấu hình password policy tối thiểu 8 ký tự ở Supabase đồng bộ với features/auth/config.ts; quy tắc server có thể chặt hơn. Thiết lập SMTP trước khi thử email cho người dùng thật; kiểm tra giới hạn gửi email của môi trường Supabase.
 
-Thiếu hoặc sai env: app hiển thị thông báo, khóa submit auth, vẫn cho truy cập /demo. Không có chế độ đăng nhập giả.
+Thiếu hoặc sai env: app hiển thị thông báo, khóa submit auth, yêu cầu cấu hình Supabase để sử dụng board. Không có chế độ đăng nhập giả.
 
 ## Cấu trúc và cơ chế
 
@@ -29,7 +29,7 @@ SDK quản lý session trong browser storage, ứng dụng không tự lưu mậ
 
 ## Board trong giai đoạn chuyển tiếp
 
-/demo giữ dữ liệu mẫu legacy ở kanban.board.v1. /board yêu cầu đăng nhập và dùng key kanban.board.v1.<userId>, bắt đầu rỗng. Không tự nhập dữ liệu demo vào tài khoản. Đổi user/đăng xuất xóa state đang hiển thị, unmount đóng dialog/bản nháp. Logout không xóa dữ liệu local đã lưu để tránh mất công việc.
+/board yêu cầu đăng nhập và dùng key kanban.board.v1.<userId>, bắt đầu rỗng. Đổi user/đăng xuất xóa state đang hiển thị, unmount đóng dialog/bản nháp. Logout không xóa dữ liệu local đã lưu để tránh mất công việc.
 
 Tách key chỉ tránh nhầm dữ liệu giữa tài khoản ở UI, không phải bảo vệ dữ liệu trên máy dùng chung: localStorage vẫn có thể đọc bằng DevTools. Chưa có database task/RLS hoặc đồng bộ thiết bị. Chỉ sử dụng dữ liệu thử nghiệm cho tới khi hoàn tất persistence online.
 
@@ -52,5 +52,5 @@ Tham khảo: https://supabase.com/docs/guides/auth/passwords và https://supabas
 ## Kết quả kiểm chứng 2026-09-29
 
 - Production build và 26 test đạt (SDK mock cho auth; không gọi Supabase thật).
-- Browser: /account chuyển tới /login?redirect=/account; đăng ký mobile 390px không tràn ngang; form auth bị khóa khi thiếu env; reset thiếu phiên hiển thị yêu cầu gửi link mới; /demo vẫn có 6 thẻ mẫu đã lưu. Không ghi nhận lỗi console trong lượt kiểm tra này.
+- Browser: /account chuyển tới /login?redirect=/account; đăng ký mobile 390px không tràn ngang; form auth bị khóa khi thiếu env; reset thiếu phiên hiển thị yêu cầu gửi link mới. Không ghi nhận lỗi console trong lượt kiểm tra này.
 - Chưa kiểm chứng email, phiên thật và hồ sơ trên dịch vụ vì dự án chưa có .env.local/Supabase project.

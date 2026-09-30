@@ -11,7 +11,7 @@
 | URL và public key Supabase theo môi trường                             | .env.example → .env.local    |
 | Alias và registry shadcn-vue                                           | components.json              |
 
-Cấu hình tĩnh là object TypeScript có kiểu; không đưa vào Pinia vì không thay đổi trong lúc chạy. State nghiệp vụ tiếp tục nằm ở stores/board.ts. Khi có sở thích người dùng (theme, mật độ hiển thị), tạo store riêng với validation và persistence thay vì sửa object cấu hình tĩnh. Workspace mẫu hiện là thông tin demo, sau này lấy từ workspace được chọn trong database.
+Cấu hình tĩnh là object TypeScript có kiểu; không đưa vào Pinia vì không thay đổi trong lúc chạy. State nghiệp vụ tiếp tục nằm ở stores/board.ts. Khi có sở thích người dùng (theme, mật độ hiển thị), tạo store riêng với validation và persistence thay vì sửa object cấu hình tĩnh. Nhãn Cá nhân dùng cho board cá nhân; màn hình workspace lấy tên từ workspace được chọn trong database.
 
 UI và Zod dùng chung taskLimits; thay giới hạn một chỗ sẽ cập nhật cả form lẫn validation. Không đổi ID status/priority hoặc storage key tùy tiện: dữ liệu đã lưu phụ thuộc vào chúng; cần migration nếu thay đổi schema. Giữ nguyên key/version hiện tại để bảng local cũ vẫn đọc được.
 
@@ -26,3 +26,7 @@ Input ngày vẫn dùng type=date bên trong shadcn Input để tận dụng b�
 Thêm component: npx shadcn-vue@2.8.2 add <component>. Review diff trước khi dùng --overwrite vì source local có tùy chỉnh.
 
 Tài liệu: https://www.shadcn-vue.com/docs/cli
+
+## Màu và trạng thái form
+
+Bảng màu sáng dùng xanh dương cho hành động chính, nền slate nhạt và card trắng. Toàn bộ màu nằm ở `src/assets/tokens.css`. Các token `--field-*` phân biệt input có thể sửa (trắng, viền rõ), hover (viền xanh), focus (outline xanh), readonly (xám nhạt, vẫn chọn/copy được), disabled (xám đậm hơn, con trỏ khóa). Quy tắc dùng chung theo `data-slot` ở `main.css`, bao gồm trường bị disabled bởi fieldset; không giảm opacity toàn bộ chữ trong input. `aria-invalid=true` giữ viền đỏ để chỉ lỗi.

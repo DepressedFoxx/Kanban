@@ -1,6 +1,6 @@
 # Kiến trúc và lộ trình
 
-Phạm vi sản phẩm và tiêu chí nghiệm thu nằm trong [Yêu cầu dự án](requirements.md). Board hiện vẫn local; phần Auth của M1 đã có source, xem [module auth](auth.md). M1/M2/M3 dưới đây là mốc triển khai; MVP cộng tác hoàn thành ở M3, sau khi đạt các kịch bản nghiệm thu.
+Phạm vi sản phẩm và tiêu chí nghiệm thu nằm trong [Yêu cầu dự án](requirements.md). Board/task online đã có module riêng, xem [module board](boards.md). Bản local cũ giữ ở `/personal-board`. Xem [module auth](auth.md). M1/M2/M3 dưới đây là mốc triển khai; MVP cộng tác hoàn thành ở M3, sau khi đạt các kịch bản nghiệm thu.
 
 ## Bản local hiện tại
 
@@ -37,7 +37,7 @@ Chọn thứ tự số nguyên và một RPC transaction cho thao tác move ở 
 
 Owner quản lý workspace và thành viên; Member sửa công việc; Viewer chỉ đọc. Dùng membership để viết RLS cho SELECT/INSERT/UPDATE/DELETE, kiểm tra cả trạng thái trước và sau UPDATE. Không tin workspace_id hoặc role từ frontend; không để người dùng tự nâng vai trò. Kiểm thử tài khoản A không thể đọc/sửa dữ liệu workspace B bằng request trực tiếp.
 
-Lời mời cần email/người nhận, hạn dùng và trạng thái đã nhận. Không biến tên assignee của demo thành tài khoản thật một cách tự động.
+Lời mời cần email/người nhận, hạn dùng và trạng thái đã nhận. Không biến tên assignee của board cá nhân local thành tài khoản thật một cách tự động.
 
 ## M3: realtime và nghiệm thu MVP
 
