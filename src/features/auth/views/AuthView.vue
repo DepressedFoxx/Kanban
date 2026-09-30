@@ -169,10 +169,24 @@ async function submit() {
           class="flex flex-wrap gap-x-4 gap-y-3 text-sm text-primary"
           aria-label="Tài khoản"
         >
-          <RouterLink v-if="mode !== 'login'" :to="authConfig.routes.login"
+          <RouterLink
+            v-if="mode !== 'login'"
+            :to="{
+              path: authConfig.routes.login,
+              query: route.query.redirect
+                ? { redirect: safeRedirect(route.query.redirect) }
+                : {},
+            }"
             >Đăng nhập</RouterLink
           >
-          <RouterLink v-if="mode === 'login'" :to="authConfig.routes.register"
+          <RouterLink
+            v-if="mode === 'login'"
+            :to="{
+              path: authConfig.routes.register,
+              query: route.query.redirect
+                ? { redirect: safeRedirect(route.query.redirect) }
+                : {},
+            }"
             >Tạo tài khoản</RouterLink
           >
           <RouterLink

@@ -1,11 +1,20 @@
 import { appConfig } from '@/config/app'
 import { authConfig } from './config'
+import { workspaceConfig } from '@/features/workspaces/config'
 // Explicit allowlist prevents external redirects and auth redirect loops.
 export function safeRedirect(value: unknown): string {
-  return typeof value === 'string' &&
-    [appConfig.routes.board, authConfig.routes.account].includes(
-      value as '/board' | '/account',
-    )
+  if (typeof value !== 'string') return appConfig.routes.board
+  const paths: string[] = [
+    appConfig.routes.board,
+    authConfig.routes.account,
+    workspaceConfig.listPath,
+  ]
+  const workspacePath =
+    /^\/workspaces\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\/members$/i
+  const invitationPath = /^\/invite\/[a-f0-9]{64}$/
+  return paths.includes(value) ||
+    workspacePath.test(value) ||
+    invitationPath.test(value)
     ? value
     : appConfig.routes.board
 }

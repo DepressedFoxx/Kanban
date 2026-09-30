@@ -6,10 +6,28 @@ import { authConfig } from '@/features/auth/config'
 import { authRedirect, safeRedirect } from '@/features/auth/navigation'
 import { useBoardStore } from '@/stores/board'
 import { useAuthStore } from '@/stores/auth'
+import { useWorkspaceStore } from '@/stores/workspaces'
+import { workspaceConfig } from '@/features/workspaces/config'
 const authView = () => import('@/features/auth/views/AuthView.vue')
 export const router = createRouter({
   history: createWebHistory(),
   routes: [
+    {
+      path: workspaceConfig.listPath,
+      component: () => import('@/features/workspaces/views/WorkspacesView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/workspaces/:workspaceId/members',
+      component: () => import('@/features/workspaces/views/MembersView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/invite/:token',
+      component: () =>
+        import('@/features/workspaces/views/AcceptInviteView.vue'),
+      meta: { requiresAuth: true },
+    },
     { path: '/', redirect: appConfig.routes.board },
     {
       path: appConfig.routes.board,
@@ -61,7 +79,10 @@ export function installAuthGuards(pinia: Pinia) {
   const auth = useAuthStore(pinia)
   const stopIdentityWatch = watch(
     () => auth.user?.id,
-    () => useBoardStore(pinia).clear(),
+    () => {
+      useBoardStore(pinia).clear()
+      useWorkspaceStore(pinia).clear()
+    },
     { flush: 'sync' },
   )
   const removeGuard = router.beforeEach(async (to) => {

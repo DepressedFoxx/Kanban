@@ -3,6 +3,9 @@ import { appConfig } from '@/config/app'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores/auth'
 import { authConfig } from '@/features/auth/config'
+import { workspaceConfig } from '@/features/workspaces/config'
+import { computed } from 'vue'
+import { useWorkspaceStore } from '@/stores/workspaces'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import {
   Columns3,
@@ -14,6 +17,17 @@ import {
 const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
+const workspaces = useWorkspaceStore()
+const workspaceScreen = computed(
+  () =>
+    route.path.startsWith('/workspaces') ||
+    route.path.startsWith('/invite/'),
+)
+const workspaceLabel = computed(() =>
+  workspaceScreen.value
+    ? (workspaces.current?.name ?? 'Workspace')
+    : appConfig.workspaceName,
+)
 async function logout() {
   if (await auth.logout()) await router.replace(authConfig.routes.login)
 }
@@ -36,18 +50,27 @@ async function logout() {
       >
         <p class="text-xs text-muted-foreground">Không gian làm việc</p>
         <p class="mt-2 flex items-center gap-2 text-sm font-medium">
-          <span class="avatar">S</span>{{ appConfig.workspaceName }}
+          <span class="avatar">{{ workspaceLabel.slice(0, 1) }}</span
+          ><span class="break-words">{{ workspaceLabel }}</span>
         </p>
       </div>
-      <nav class="mt-7 flex gap-2 lg:flex-col" aria-label="Điều hướng chính">
+      <nav
+        class="mt-7 flex flex-wrap gap-2 lg:flex-col"
+        aria-label="Điều hướng chính"
+      >
+        <RouterLink
+          v-if="auth.authenticated"
+          :to="workspaceConfig.listPath"
+          class="nav-link"
+          >Workspace &amp; thành viên</RouterLink
+        >
         <RouterLink :to="appConfig.routes.board" class="nav-link"
           ><LayoutDashboard :size="17" />Bảng công việc</RouterLink
         ><RouterLink :to="appConfig.routes.guide" class="nav-link"
           ><BookOpen :size="17" />Hướng dẫn</RouterLink
         >
-        <RouterLink :to="appConfig.routes.demo" class="nav-link"
-          >Bảng demo</RouterLink
-        ><RouterLink
+        <RouterLink :to="appConfig.routes.demo" class="nav-link">Bảng demo</RouterLink>
+        <RouterLink
           v-if="auth.authenticated"
           :to="authConfig.routes.account"
           class="nav-link"
@@ -77,13 +100,14 @@ async function logout() {
         class="flex min-h-17 flex-wrap items-center justify-between gap-4 border-b border-border bg-white px-5 py-3 lg:px-9"
       >
         <p class="text-xs text-muted-foreground">
-          {{ appConfig.workspaceName }}
+          {{ workspaceLabel }}
           <span class="mx-2 text-stone-300">/</span> Không gian làm việc
         </p>
         <span
           class="flex items-center gap-2 rounded-full border border-border px-3 py-1.5 text-[11px] text-muted-foreground"
-          ><span class="size-1.5 rounded-full bg-emerald-600" />Dữ liệu
-          local</span
+          ><span class="size-1.5 rounded-full bg-emerald-600" />{{
+            workspaceScreen ? 'Workspace online' : 'Board local'
+          }}</span
         >
         <div class="flex flex-wrap items-center gap-2">
           <template v-if="auth.authenticated"

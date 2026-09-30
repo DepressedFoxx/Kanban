@@ -28,10 +28,13 @@
     "zod": "^4.1.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@tailwindcss/vite": "^4.1.13",
     "@types/node": "^24.0.0",
     "@vitejs/plugin-vue": "^6.0.1",
+    "@vue/test-utils": "^2.5.1",
     "@vue/tsconfig": "^0.8.1",
+    "jsdom": "^29.1.1",
     "prettier": "^3.6.2",
     "tailwindcss": "^4.1.13",
     "typescript": "~5.9.2",

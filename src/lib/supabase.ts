@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { authConfig } from '@/features/auth/config'
 // Capture provider error before the SDK clears the callback fragment. Never retain tokens.
 export const authLinkError =
@@ -10,7 +10,7 @@ export const authLinkError =
     new URLSearchParams(window.location.search).has('error'))
 const url = import.meta.env.VITE_SUPABASE_URL?.trim()
 const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim()
-let client: ReturnType<typeof createClient> | null = null
+let client: SupabaseClient | null = null
 let configError = ''
 if (!url || !key) {
   configError =
