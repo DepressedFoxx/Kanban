@@ -75,7 +75,7 @@ describe('auth boundaries', () => {
       query: { redirect: '/account' },
     })
     expect(authRedirect(true, true, '/account')).toBe(true)
-    expect(authRedirect(false, false, '/demo')).toBe(true)
+    expect(authRedirect(false, false, '/guide')).toBe(true)
   })
   it('rejects blank names, short passwords and mismatched confirmation', () => {
     const data = {

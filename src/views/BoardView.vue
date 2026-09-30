@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { appConfig } from '@/config/app'
 import { computed, ref, onBeforeUnmount } from 'vue'
-import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 import { Plus, Search, ArrowUpRight } from '@lucide/vue'
@@ -23,8 +22,7 @@ import { useBoardStore } from '@/stores/board'
 
 const board = useBoardStore()
 const auth = useAuthStore()
-const route = useRoute()
-board.setScope(route.path === appConfig.routes.demo ? null : auth.user!.id)
+board.setScope(auth.user!.id)
 onBeforeUnmount(() => board.clear())
 const query = ref('')
 const priority = ref('all')

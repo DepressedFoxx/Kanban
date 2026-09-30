@@ -14,7 +14,7 @@ let client: SupabaseClient | null = null
 let configError = ''
 if (!url || !key) {
   configError =
-    'Đăng nhập chưa được cấu hình. Bạn có thể khám phá bảng demo trong lúc chờ kết nối dịch vụ.'
+    'Đăng nhập chưa được cấu hình. Vui lòng cấu hình kết nối Supabase để sử dụng ứng dụng.'
 } else {
   try {
     if (!['http:', 'https:'].includes(new URL(url).protocol))

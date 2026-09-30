@@ -35,10 +35,6 @@ export const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
-      path: appConfig.routes.demo,
-      component: () => import('@/views/BoardView.vue'),
-    },
-    {
       path: appConfig.routes.guide,
       component: () => import('@/views/GuideView.vue'),
     },

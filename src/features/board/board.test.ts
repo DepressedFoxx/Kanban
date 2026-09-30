@@ -12,6 +12,20 @@ beforeEach(() => {
     setItem: (key: string, value: string) => values.set(key, value),
   })
   setActivePinia(createPinia())
+  const board = useBoardStore()
+  board.setScope('test-user')
+  for (const [index, status] of (
+    ['todo', 'todo', 'doing', 'done'] as const
+  ).entries()) {
+    board.save({
+      title: `Task ${index}`,
+      description: '',
+      status,
+      priority: 'low',
+      assignee: '',
+      dueDate: '',
+    })
+  }
 })
 
 describe('board behavior', () => {
@@ -27,10 +41,14 @@ describe('board behavior', () => {
     })
     const saved = board.tasks.at(-1)!
     expect(saved.title).toBe('Viết tài liệu')
-    expect(loadBoard(localStorage).tasks.at(-1)?.id).toBe(saved.id)
+    expect(
+      loadBoard(localStorage, STORAGE_KEY + '.test-user').tasks.at(-1)?.id,
+    ).toBe(saved.id)
     board.remove(saved.id)
     expect(
-      loadBoard(localStorage).tasks.some((task) => task.id === saved.id),
+      loadBoard(localStorage, STORAGE_KEY + '.test-user').tasks.some(
+        (task) => task.id === saved.id,
+      ),
     ).toBe(false)
   })
 
@@ -68,7 +86,9 @@ describe('board behavior', () => {
       expect(board.tasks.find((task) => task.id === moving.id)?.status).toBe(
         'doing',
       )
-      expect(loadBoard(localStorage).tasks).toEqual(board.tasks)
+      expect(loadBoard(localStorage, STORAGE_KEY + '.test-user').tasks).toEqual(
+        board.tasks,
+      )
     },
   )
 
@@ -86,9 +106,13 @@ describe('board behavior', () => {
   })
 
   it('reports invalid stored data instead of crashing', () => {
-    values.set(STORAGE_KEY, '{broken')
-    expect(loadBoard(localStorage).error).not.toBe('')
-    expect(loadBoard(localStorage).tasks.length).toBeGreaterThan(0)
+    values.set(STORAGE_KEY + '.test-user', '{broken')
+    expect(loadBoard(localStorage, STORAGE_KEY + '.test-user').error).not.toBe(
+      '',
+    )
+    expect(loadBoard(localStorage, STORAGE_KEY + '.test-user').tasks).toEqual(
+      [],
+    )
   })
 
   it('keeps a visible error if storage is full', () => {
@@ -102,9 +126,8 @@ describe('board behavior', () => {
 })
 
 describe('account storage isolation', () => {
-  it('keeps demo and two account boards separate and clears UI state', () => {
+  it('keeps two account boards separate and clears UI state', () => {
     const board = useBoardStore()
-    const demoIds = board.tasks.map((task) => task.id)
     board.setScope('user-a')
     expect(board.tasks).toHaveLength(0)
     board.save({
@@ -121,7 +144,8 @@ describe('account storage isolation', () => {
     expect(board.tasks[0]?.title).toBe('Private A')
     board.clear()
     expect(board.tasks).toHaveLength(0)
-    board.setScope(null)
-    expect(board.tasks.map((task) => task.id)).toEqual(demoIds)
+    board.setScope('user-a')
+    expect(board.tasks[0]?.title).toBe('Private A')
+    expect(values.has(STORAGE_KEY)).toBe(false)
   })
 })

@@ -1,7 +1,6 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import {
-  createSeed,
   taskSchema,
   type Status,
   type Task,
@@ -10,18 +9,18 @@ import {
 import { STORAGE_KEY, loadBoard, saveBoard } from '@/features/board/storage'
 
 export const useBoardStore = defineStore('board', () => {
-  const tasks = ref<Task[]>(createSeed())
+  const tasks = ref<Task[]>([])
   const storageError = ref('')
-  let storageKey: string = STORAGE_KEY
-  let seed = true
-  function setScope(userId: string | null) {
-    storageKey = userId ? STORAGE_KEY + '.' + userId : STORAGE_KEY
-    seed = !userId
+  let storageKey: string | null = null
+  function setScope(userId: string) {
+    if (!userId) throw new Error('Board requires an account')
+    storageKey = STORAGE_KEY + '.' + userId
     tasks.value = []
     storageError.value = ''
     initialize()
   }
   function clear() {
+    storageKey = null
     tasks.value = []
     storageError.value = ''
   }
@@ -30,8 +29,9 @@ export const useBoardStore = defineStore('board', () => {
   )
 
   function initialize() {
+    if (!storageKey) return
     try {
-      const result = loadBoard(localStorage, storageKey, seed)
+      const result = loadBoard(localStorage, storageKey)
       tasks.value = result.tasks
       storageError.value = result.error
     } catch {
@@ -41,6 +41,7 @@ export const useBoardStore = defineStore('board', () => {
   }
 
   function persist() {
+    if (!storageKey) return
     try {
       saveBoard(localStorage, tasks.value, storageKey)
       storageError.value = ''
@@ -84,7 +85,6 @@ export const useBoardStore = defineStore('board', () => {
     persist()
   }
 
-  initialize()
   return {
     setScope,
     clear,

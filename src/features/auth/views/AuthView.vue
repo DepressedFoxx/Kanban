@@ -69,7 +69,7 @@ async function submit() {
       class="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-sm sm:p-8"
     >
       <RouterLink
-        :to="appConfig.routes.demo"
+        :to="appConfig.routes.board"
         class="text-lg font-semibold text-primary"
         >kanban.</RouterLink
       >
@@ -200,11 +200,6 @@ async function submit() {
             >Về tài khoản</RouterLink
           >
         </nav>
-        <RouterLink
-          :to="appConfig.routes.demo"
-          class="text-center text-sm text-muted-foreground underline underline-offset-4"
-          >Khám phá bảng demo</RouterLink
-        >
       </div>
     </section>
   </main>

@@ -69,7 +69,6 @@ async function logout() {
         ><RouterLink :to="appConfig.routes.guide" class="nav-link"
           ><BookOpen :size="17" />Hướng dẫn</RouterLink
         >
-        <RouterLink :to="appConfig.routes.demo" class="nav-link">Bảng demo</RouterLink>
         <RouterLink
           v-if="auth.authenticated"
           :to="authConfig.routes.account"
@@ -91,7 +90,7 @@ async function logout() {
           /></RouterLink>
         </div>
         <p class="mt-5 text-[11px] text-muted-foreground">
-          Không gian mẫu · Phiên bản 0.1
+          Kanban · Workspace của bạn
         </p>
       </div>
     </aside>
