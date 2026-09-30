@@ -15,7 +15,7 @@ import {
   type Status,
 } from '@/features/board/model'
 
-defineProps<{ task: Task; dragDisabled: boolean }>()
+defineProps<{ task: Task; dragDisabled: boolean; readOnly?: boolean }>()
 const emit = defineEmits<{
   edit: [task: Task]
   move: [id: string, status: Status]
@@ -65,6 +65,7 @@ const emit = defineEmits<{
       >Chuyển trạng thái: {{ task.title }}</label
     >
     <Select
+      :disabled="readOnly"
       :model-value="task.status"
       @update:model-value="emit('move', task.id, $event as Status)"
       ><SelectTrigger :id="`move-${task.id}`" class="mt-3 w-full text-xs"

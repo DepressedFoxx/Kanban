@@ -73,7 +73,7 @@ async function create() {
       <RouterLink
         v-for="workspace in store.workspaces"
         :key="workspace.id"
-        :to="workspaceConfig.detailPath(workspace.id)"
+        :to="`/workspaces/${workspace.id}/boards`"
         class="min-w-0 rounded-xl border bg-card p-5 transition-colors hover:bg-accent"
         ><span class="text-xs text-muted-foreground">{{
           roleLabels[workspace.role]
@@ -81,7 +81,7 @@ async function create() {
         <h2 class="mt-2 break-words text-lg font-semibold">
           {{ workspace.name }}
         </h2>
-        <p class="mt-3 text-sm text-primary">Quản lý thành viên →</p></RouterLink
+        <p class="mt-3 text-sm text-primary">Xem board →</p></RouterLink
       >
     </div>
   </main>

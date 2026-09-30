@@ -8,12 +8,16 @@ export function safeRedirect(value: unknown): string {
     appConfig.routes.board,
     authConfig.routes.account,
     workspaceConfig.listPath,
+    '/personal-board',
   ]
   const workspacePath =
-    /^\/workspaces\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\/members$/i
+    /^\/workspaces\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\/(members|boards)$/i
   const invitationPath = /^\/invite\/[a-f0-9]{64}$/
   return paths.includes(value) ||
     workspacePath.test(value) ||
+    /^\/boards\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(
+      value,
+    ) ||
     invitationPath.test(value)
     ? value
     : appConfig.routes.board

@@ -5,6 +5,7 @@ import { appConfig } from '@/config/app'
 import { authConfig } from '@/features/auth/config'
 import { authRedirect, safeRedirect } from '@/features/auth/navigation'
 import { useBoardStore } from '@/stores/board'
+import { useOnlineBoardStore } from '@/stores/onlineBoard'
 import { useAuthStore } from '@/stores/auth'
 import { useWorkspaceStore } from '@/stores/workspaces'
 import { workspaceConfig } from '@/features/workspaces/config'
@@ -12,6 +13,16 @@ const authView = () => import('@/features/auth/views/AuthView.vue')
 export const router = createRouter({
   history: createWebHistory(),
   routes: [
+    {
+      path: '/workspaces/:workspaceId/boards',
+      component: () => import('@/features/boards/views/BoardsView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/boards/:boardId',
+      component: () => import('@/features/boards/views/OnlineBoardView.vue'),
+      meta: { requiresAuth: true },
+    },
     {
       path: workspaceConfig.listPath,
       component: () => import('@/features/workspaces/views/WorkspacesView.vue'),
@@ -31,6 +42,10 @@ export const router = createRouter({
     { path: '/', redirect: appConfig.routes.board },
     {
       path: appConfig.routes.board,
+      redirect: '/workspaces',
+    },
+    {
+      path: '/personal-board',
       component: () => import('@/views/BoardView.vue'),
       meta: { requiresAuth: true },
     },
@@ -77,6 +92,7 @@ export function installAuthGuards(pinia: Pinia) {
     () => auth.user?.id,
     () => {
       useBoardStore(pinia).clear()
+      useOnlineBoardStore(pinia).clear()
       useWorkspaceStore(pinia).clear()
     },
     { flush: 'sync' },

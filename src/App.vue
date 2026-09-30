@@ -6,6 +6,7 @@ import { authConfig } from '@/features/auth/config'
 import { workspaceConfig } from '@/features/workspaces/config'
 import { computed } from 'vue'
 import { useWorkspaceStore } from '@/stores/workspaces'
+import { useOnlineBoardStore } from '@/stores/onlineBoard'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import {
   Columns3,
@@ -18,14 +19,18 @@ const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 const workspaces = useWorkspaceStore()
+const onlineBoard = useOnlineBoardStore()
 const workspaceScreen = computed(
   () =>
     route.path.startsWith('/workspaces') ||
-    route.path.startsWith('/invite/'),
+    route.path.startsWith('/invite/') ||
+    route.path.startsWith('/boards/'),
 )
 const workspaceLabel = computed(() =>
   workspaceScreen.value
-    ? (workspaces.current?.name ?? 'Workspace')
+    ? (workspaces.current?.name ??
+      onlineBoard.snapshot?.board.name ??
+      'Workspace')
     : appConfig.workspaceName,
 )
 async function logout() {
@@ -62,10 +67,10 @@ async function logout() {
           v-if="auth.authenticated"
           :to="workspaceConfig.listPath"
           class="nav-link"
-          >Workspace &amp; thành viên</RouterLink
+          >Workspace &amp; board</RouterLink
         >
-        <RouterLink :to="appConfig.routes.board" class="nav-link"
-          ><LayoutDashboard :size="17" />Bảng công việc</RouterLink
+        <RouterLink :to="'/personal-board'" class="nav-link"
+          ><LayoutDashboard :size="17" />Board cá nhân cũ</RouterLink
         ><RouterLink :to="appConfig.routes.guide" class="nav-link"
           ><BookOpen :size="17" />Hướng dẫn</RouterLink
         >

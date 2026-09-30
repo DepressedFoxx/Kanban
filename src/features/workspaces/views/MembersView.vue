@@ -127,6 +127,11 @@ async function revoke(invitation: string) {
 </script>
 <template>
   <main class="mx-auto max-w-5xl p-5 lg:p-9">
+    <Button as-child variant="outline" class="mb-4 mr-4"
+      ><RouterLink :to="`/workspaces/${id}/boards`"
+        >Board của workspace</RouterLink
+      ></Button
+    >
     <RouterLink
       :to="workspaceConfig.listPath"
       class="text-sm text-primary underline"
