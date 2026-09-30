@@ -15,6 +15,8 @@ export const useOnlineBoardStore = defineStore('online-board', () => {
     pending = ref(false),
     error = ref(''),
     notice = ref('')
+  const refreshing = ref(false)
+  const syncError = ref('')
   const uncertain = ref<Mutation | null>(null)
   const lastSuccess = ref('')
   let generation = 0
@@ -30,6 +32,8 @@ export const useOnlineBoardStore = defineStore('online-board', () => {
   )
   function clear() {
     generation++
+    refreshing.value = false
+    syncError.value = ''
     snapshot.value = null
     loading.value = false
     pending.value = false
@@ -38,24 +42,58 @@ export const useOnlineBoardStore = defineStore('online-board', () => {
     notice.value = ''
     lastSuccess.value = ''
   }
-  async function load(id: string) {
-    if (pending.value || loading.value) return false
+  async function load(id: string, options: { background?: boolean } = {}) {
+    if (pending.value || loading.value || refreshing.value || uncertain.value)
+      return false
+    const background = Boolean(
+      options.background && snapshot.value?.board.id === id,
+    )
     const request = ++generation
-    loading.value = true
-    error.value = ''
-    if (snapshot.value?.board.id !== id) { snapshot.value = null; uncertain.value = null }
+    if (background) refreshing.value = true
+    else {
+      loading.value = true
+      error.value = ''
+    }
+    if (snapshot.value?.board.id !== id) {
+      snapshot.value = null
+      uncertain.value = null
+    }
     try {
       const value = await boardsApi.snapshot(id)
       if (request !== generation) return false
-      snapshot.value = value
+      // Keep object identity when nothing changed; polling must not rebuild cards.
+      if (JSON.stringify(snapshot.value) !== JSON.stringify(value))
+        snapshot.value = value
+      syncError.value = ''
       return true
     } catch (cause) {
-      if (request === generation) { snapshot.value = null; error.value = boardError(cause) }
+      if (request === generation) {
+        const code = (cause as { code?: string })?.code
+        if (
+          background &&
+          code !== '42501' &&
+          code !== 'PGRST301' &&
+          code !== 'PGRST303'
+        ) {
+          syncError.value =
+            'Chưa cập nhật được dữ liệu mới. Đang giữ bản đã tải; sẽ thử lại.'
+        } else {
+          snapshot.value = null
+          error.value = boardError(cause)
+        }
+      }
       return false
-    } finally { if (request === generation) loading.value = false }
+    } finally {
+      if (request === generation) {
+        loading.value = false
+        refreshing.value = false
+      }
+    }
   }
   async function send(mutation: Mutation) {
-    const request = generation
+    // A user write supersedes any older background read.
+    const request = ++generation
+    refreshing.value = false
     pending.value = true
     error.value = ''
     notice.value = ''
@@ -129,6 +167,8 @@ export const useOnlineBoardStore = defineStore('online-board', () => {
   return {
     snapshot,
     loading,
+    refreshing,
+    syncError,
     pending,
     error,
     notice,

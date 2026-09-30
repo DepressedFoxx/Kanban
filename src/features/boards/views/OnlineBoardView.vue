@@ -85,10 +85,11 @@ function edit(task: OnlineTask) {
   selected.value = task
   open.value = true
 }
-async function refresh() {
+async function refresh(background = false) {
   if (!store.pending && !store.uncertain) {
     const previousName = store.snapshot?.board.name
-    await store.load(id)
+    const loaded = await store.load(id, { background })
+    if (!loaded) return
     if (!previousName || name.value === previousName) {
       name.value = store.snapshot?.board.name ?? ''
       nameVersion.value = store.snapshot?.board.version ?? 0
@@ -114,7 +115,7 @@ function revalidate() {
     !store.loading &&
     !store.uncertain
   )
-    void refresh()
+    void refresh(true)
 }
 function connection() {
   online.value = navigator.onLine
@@ -405,7 +406,7 @@ onBeforeUnmount(() => {
         {{
           store.pending
             ? 'Đang lưu…'
-            :  store.notice || 'Đã tải dữ liệu từ Supabase.'
+            : store.syncError || store.notice || 'Đã tải dữ liệu từ Supabase.'
         }}
         · Tự kiểm tra cập nhật mỗi 30 giây khi không mở form.
       </p>

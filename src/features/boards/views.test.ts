@@ -127,6 +127,34 @@ describe('online board UI', () => {
       { id: taskId, status: 'doing', position: 0 },
     ])
   })
+  it('keeps controls and cards mounted while the polling timer awaits the server', async () => {
+    const timer = vi.spyOn(globalThis, 'setInterval')
+    let tick!: () => void
+    try {
+      await render(true)
+      tick = timer.mock.calls.at(-1)![0] as () => void
+    } finally {
+      timer.mockRestore()
+    }
+    const input = wrapper!.get('#rename-board').element
+    const card = wrapper!.get('.task-card').element
+    let finish!: (value: unknown) => void
+    api.snapshot.mockReturnValue(
+      new Promise((resolve) => {
+        finish = resolve
+      }),
+    )
+    tick()
+    await flushPromises()
+    expect(wrapper!.text()).not.toContain('Đang tải board')
+    expect(wrapper!.text()).toContain('Tạo công việc')
+    expect(wrapper!.get('#rename-board').attributes('disabled')).toBeUndefined()
+    expect(wrapper!.get('.task-card').element).toBe(card)
+    finish(snapshot())
+    await flushPromises()
+    expect(wrapper!.get('#rename-board').element).toBe(input)
+    expect(wrapper!.get('.task-card').element).toBe(card)
+  })
   it('preserves a dirty board name and requires reconciliation after a new snapshot', async () => {
     const { pinia } = await render(true)
     await wrapper!.get('#rename-board').setValue('My draft name')

@@ -88,6 +88,66 @@ describe('online board state', () => {
     await store.load(id)
     expect(store.writable).toBe(false)
   })
+  it('refreshes silently without changing writable state or identical snapshot identity', async () => {
+    const store = useOnlineBoardStore()
+    await store.load(id)
+    const previous = store.snapshot
+    let finish!: (value: unknown) => void
+    api.snapshot.mockReturnValue(
+      new Promise((resolve) => {
+        finish = resolve
+      }),
+    )
+    const request = store.load(id, { background: true })
+    expect(store.loading).toBe(false)
+    expect(store.writable).toBe(true)
+    expect(store.refreshing).toBe(true)
+    expect(store.snapshot).toBe(previous)
+    expect(await store.load(id, { background: true })).toBe(false)
+    finish(value())
+    await request
+    expect(store.snapshot).toBe(previous)
+    expect(store.refreshing).toBe(false)
+  })
+  it('does not let a late background read overwrite a successful mutation', async () => {
+    const store = useOnlineBoardStore()
+    await store.load(id)
+    let finish!: (value: unknown) => void
+    api.snapshot.mockReturnValue(
+      new Promise((resolve) => {
+        finish = resolve
+      }),
+    )
+    const request = store.load(id, { background: true })
+    api.mutate.mockResolvedValue(value(2))
+    expect(await store.mutate('rename', { name: 'New' })).toBe(true)
+    finish(value())
+    await request
+    expect(store.snapshot?.board.version).toBe(2)
+    expect(store.refreshing).toBe(false)
+  })
+  it('retains data on background network errors but clears it on revoked access', async () => {
+    const store = useOnlineBoardStore()
+    await store.load(id)
+    const previous = store.snapshot
+    api.snapshot.mockRejectedValueOnce(new Error('Network'))
+    await store.load(id, { background: true })
+    expect(store.snapshot).toBe(previous)
+    expect(store.error).toBe('')
+    expect(store.syncError).not.toBe('')
+    api.snapshot.mockRejectedValueOnce({ code: '42501' })
+    await store.load(id, { background: true })
+    expect(store.snapshot).toBeNull()
+    expect(store.writable).toBe(false)
+  })
+  it('still applies role changes even when board version is unchanged', async () => {
+    const store = useOnlineBoardStore()
+    await store.load(id)
+    api.snapshot.mockResolvedValue(value(1, 'viewer'))
+    await store.load(id, { background: true })
+    expect(store.snapshot?.role).toBe('viewer')
+    expect(store.writable).toBe(false)
+  })
   it('allows exact board return paths but rejects added queries and external URLs', () => {
     for (const path of [`/boards/${id}`, `/workspaces/${id}/boards`])
       expect(safeRedirect(path)).toBe(path)
