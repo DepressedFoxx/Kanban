@@ -110,7 +110,14 @@ onBeforeRouteUpdate((to, from) =>
   to.query.task !== from.query.task ? guardNavigation() : true,
 )
 function beforeUnload(event: BeforeUnloadEvent) {
-  if (props.open && (dirty.value || store.pending || thread.pending)) {
+  if (
+    props.open &&
+    (dirty.value ||
+      store.pending ||
+      thread.pending ||
+      store.uncertain ||
+      thread.uncertain)
+  ) {
     event.preventDefault()
     event.returnValue = ''
   }

@@ -1,8 +1,11 @@
+import { withDeadline } from '@/features/sync/request'
 import { supabase } from '@/lib/supabase'
 import { threadSchema, type ThreadCursor } from './model'
 async function rpc(name: string, args: Record<string, unknown>) {
   if (!supabase) throw new Error('Supabase unavailable')
-  const { data, error } = await supabase.rpc(name, args)
+  const { data, error } = await withDeadline((signal) =>
+    supabase!.rpc(name, args).abortSignal(signal),
+  )
   if (error) throw error
   return threadSchema.parse(data)
 }

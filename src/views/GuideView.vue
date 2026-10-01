@@ -43,9 +43,9 @@ import PageHeader from '@/components/PageHeader.vue'
         <h2 class="text-lg font-semibold">5. Lưu trữ và đồng bộ</h2>
         <p>
           Workspace, board và task được lưu trên máy chủ, truy cập được sau khi
-          đăng nhập trên thiết bị khác. Ứng dụng kiểm tra cập nhật định kỳ; chưa
-          có cập nhật realtime. Nếu mất kết nối hoặc có xung đột, đọc thông báo
-          và đối chiếu trước khi lưu lại.
+          đăng nhập trên thiết bị khác. Board, task và thảo luận được cập nhật
+          trực tiếp, kèm kiểm tra định kỳ dự phòng. Nếu mất kết nối hoặc có xung
+          đột, đọc thông báo và đối chiếu trước khi lưu lại.
         </p>
         <p class="mt-2">
           Lưu trữ giữ lại dữ liệu và cho phép khôi phục. Board cá nhân cũ tại

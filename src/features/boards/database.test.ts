@@ -66,6 +66,12 @@ beforeAll(async () => {
       'utf8',
     ),
   )
+  await db.exec(
+    readFileSync(
+      resolve('supabase/migrations/20261001083254_board_conflict_http409.sql'),
+      'utf8',
+    ),
+  )
 }, 60000)
 beforeEach(async () => {
   await db.exec('truncate public.workspaces cascade')
@@ -306,4 +312,12 @@ describe('online boards SQL', () => {
     await expect(mutate('save_task', taskInput(), 1)).rejects.toThrow()
     expect((await snapshot()).tasks).toHaveLength(0)
   })
+})
+
+it('returns a non-retryable HTTP conflict code without changing the board', async () => {
+  const before = await snapshot()
+  await expect(
+    mutate('rename', { name: 'Stale' }, before.board.version - 1),
+  ).rejects.toMatchObject({ code: 'PT409' })
+  expect((await snapshot()).board).toEqual(before.board)
 })

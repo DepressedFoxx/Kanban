@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, watch, onBeforeUnmount } from 'vue'
+import SyncStatus from '@/features/sync/SyncStatus.vue'
+import { useCollab } from '@/features/collab/useCollab'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
@@ -17,7 +19,22 @@ const store = useTaskThreadStore(),
   draft = ref(''),
   tab = ref<'comments' | 'activity'>('comments')
 watch(draft, (value) => emit('draft-change', Boolean(value.trim())))
-let timer: ReturnType<typeof setInterval> | undefined
+const { online } = useCollab(
+  () => [
+    {
+      table: 'task_comments',
+      event: 'INSERT',
+      filter: `task_id=eq.${props.task}`,
+    },
+    {
+      table: 'task_activity',
+      event: 'INSERT',
+      filter: `task_id=eq.${props.task}`,
+    },
+  ],
+  () => store.load(props.board, props.task, 'latest', true),
+  () => !store.denied,
+)
 const actions = {
   created: 'đã tạo công việc',
   updated: 'đã cập nhật công việc',
@@ -90,16 +107,7 @@ watch(
     if (value) draft.value = ''
   },
 )
-function refresh() {
-  if (!document.hidden) void store.load(props.board, props.task, 'latest', true)
-}
-onMounted(() => {
-  timer = setInterval(refresh, taskConfig.refreshMs)
-  window.addEventListener('focus', refresh)
-})
 onBeforeUnmount(() => {
-  clearInterval(timer)
-  window.removeEventListener('focus', refresh)
   store.clear()
 })
 </script>
@@ -121,11 +129,29 @@ onBeforeUnmount(() => {
       ><Button
         type="button"
         variant="ghost"
-        :disabled="store.loading || store.pending || !!store.uncertain"
+        :disabled="
+          store.loading ||
+          store.pending ||
+          store.refreshing ||
+          !!store.uncertain ||
+          !online
+        "
         @click="store.load(board, task)"
         >Tải lại thảo luận</Button
       >
     </div>
+    <SyncStatus
+      :value="{
+        online,
+        pending: store.pending,
+        uncertain: !!store.uncertain,
+        loading: store.loading,
+        refreshing: store.refreshing,
+        error: store.error,
+        syncError: store.syncError,
+        lastSyncedAt: store.lastSyncedAt,
+      }"
+    />
     <p v-if="store.error" role="alert" class="mt-3 text-sm text-destructive">
       {{ store.error }}
     </p>
@@ -160,6 +186,7 @@ onBeforeUnmount(() => {
           ><Button
             type="submit"
             :disabled="
+              !online ||
               store.pending ||
               store.loading ||
               !!store.uncertain ||
@@ -178,7 +205,7 @@ onBeforeUnmount(() => {
       <Button
         v-if="store.uncertain"
         class="mt-3"
-        :disabled="store.pending"
+        :disabled="store.pending || !online"
         @click="store.retry"
         >Xác nhận lại bình luận</Button
       >

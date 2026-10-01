@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+vi.mock('@/lib/supabase', () => ({ supabase: null }))
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { createPinia } from 'pinia'

@@ -69,7 +69,7 @@ describe('online board state', () => {
     const store = useOnlineBoardStore()
     await store.load(id)
     api.snapshot.mockResolvedValue(value(3))
-    api.mutate.mockRejectedValue({ code: '40001', message: 'BOARD_CONFLICT' })
+    api.mutate.mockRejectedValue({ code: 'PT409', message: 'BOARD_CONFLICT' })
     expect(await store.mutate('save_task', { id }, 1)).toBe(false)
     expect(store.snapshot?.board.version).toBe(3)
     expect(store.error).toContain('bản nháp')
@@ -152,5 +152,60 @@ describe('online board state', () => {
     for (const path of [`/boards/${id}`, `/workspaces/${id}/boards`])
       expect(safeRedirect(path)).toBe(path)
     expect(safeRedirect(`/boards/${id}?redirect=//evil`)).toBe('/board')
+  })
+})
+
+describe('board sync safety', () => {
+  it('freezes the original payload when the caller edits its draft after a lost response', async () => {
+    const store = useOnlineBoardStore()
+    await store.load(id)
+    const draft = { title: 'Original', nested: { value: 1 } }
+    api.mutate
+      .mockRejectedValueOnce(new Error('SYNC_TIMEOUT'))
+      .mockResolvedValueOnce(value(2))
+    await store.mutate('save_task', draft)
+    draft.title = 'Changed'
+    draft.nested.value = 2
+    await store.retry()
+    expect(api.mutate.mock.calls[1]?.[4]).toEqual({
+      title: 'Original',
+      nested: { value: 1 },
+    })
+    expect(api.mutate.mock.calls[1]).toEqual(api.mutate.mock.calls[0])
+  })
+  it('blocks offline writes and retries while retaining the uncertain receipt', async () => {
+    const store = useOnlineBoardStore()
+    await store.load(id)
+    api.mutate.mockRejectedValueOnce(new Error('lost response'))
+    await store.mutate('rename', { name: 'New' })
+    const receipt = store.uncertain?.id
+    vi.stubGlobal('navigator', { onLine: false })
+    try {
+      expect(await store.retry()).toBe(false)
+      expect(store.uncertain?.id).toBe(receipt)
+      expect(api.mutate).toHaveBeenCalledTimes(1)
+      store.clear()
+      await store.load(id)
+      expect(await store.mutate('rename', { name: 'Offline' })).toBe(false)
+      expect(api.mutate).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+  it('clears private state on expired authentication and clears stale sync errors after confirmed save', async () => {
+    const store = useOnlineBoardStore()
+    await store.load(id)
+    expect(store.lastSyncedAt).not.toBe('')
+    api.snapshot.mockRejectedValueOnce(new Error('network'))
+    await store.load(id, { background: true })
+    api.mutate.mockResolvedValueOnce(value(2))
+    await store.mutate('rename', { name: 'New' })
+    expect(store.syncError).toBe('')
+    api.mutate.mockRejectedValueOnce({ code: 'PGRST301' })
+    await store.mutate('rename', { name: 'Denied' })
+    expect(store.snapshot).toBeNull()
+    expect(store.uncertain).toBeNull()
+    store.clear()
+    expect(store.lastSyncedAt).toBe('')
   })
 })

@@ -72,6 +72,18 @@ beforeAll(async () => {
       'utf8',
     ),
   )
+  await db.exec(
+    readFileSync(
+      resolve('supabase/migrations/20261001013707_collab_realtime.sql'),
+      'utf8',
+    ),
+  )
+  await db.exec(
+    readFileSync(
+      resolve('supabase/migrations/20261001083254_board_conflict_http409.sql'),
+      'utf8',
+    ),
+  )
 }, 60000)
 beforeEach(async () => {
   await db.exec('truncate public.workspaces cascade')
@@ -323,4 +335,26 @@ describe('task detail SQL', () => {
     ])
     expect(b.activity).toHaveLength(2)
   })
+})
+
+it('publishes only authorized collaboration read models and migration is repeatable', async () => {
+  await db.exec(
+    readFileSync(
+      resolve('supabase/migrations/20261001013707_collab_realtime.sql'),
+      'utf8',
+    ),
+  )
+  const result = await db.query<{ tablename: string }>(
+    "select tablename from pg_publication_tables where pubname='supabase_realtime' order by tablename",
+  )
+  expect(result.rows.map((row) => row.tablename)).toEqual([
+    'boards',
+    'task_activity',
+    'task_comments',
+    'workspace_members',
+  ])
+  const protectedTables = await db.query<{ relrowsecurity: boolean }>(
+    "select relrowsecurity from pg_class where oid in ('public.boards'::regclass,'public.task_activity'::regclass,'public.task_comments'::regclass,'public.workspace_members'::regclass)",
+  )
+  expect(protectedTables.rows.every((row) => row.relrowsecurity)).toBe(true)
 })

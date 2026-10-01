@@ -1,7 +1,15 @@
 <script setup lang="ts">
+import { useCollab } from '@/features/collab/useCollab'
 import PageHeader from '@/components/PageHeader.vue'
 import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import SyncStatus from '@/features/sync/SyncStatus.vue'
+import {
+  RouterLink,
+  useRoute,
+  useRouter,
+  onBeforeRouteLeave,
+  onBeforeRouteUpdate,
+} from 'vue-router'
 import draggable from 'vuedraggable'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -38,9 +46,25 @@ const nameVersion = ref(0)
 const open = ref(false),
   selected = ref<OnlineTask | null>(null),
   initial = ref<Status>('todo'),
-  online = ref(navigator.onLine),
   dragging = ref(false)
-let timer: ReturnType<typeof setInterval> | undefined
+
+const { online, label: collabLabel } = useCollab(
+  () => [
+    { table: 'boards', event: 'UPDATE', filter: `id=eq.${id}` },
+    {
+      table: 'workspace_members',
+      event: 'INSERT',
+      filter: `workspace_id=eq.${store.snapshot?.board.workspace_id}`,
+    },
+    {
+      table: 'workspace_members',
+      event: 'UPDATE',
+      filter: `workspace_id=eq.${store.snapshot?.board.workspace_id}`,
+    },
+  ],
+  () => (dragging.value ? Promise.resolve(false) : refresh(true)),
+  () => Boolean(store.snapshot),
+)
 const canWrite = computed(() => store.writable && online.value)
 const filtered = computed(() =>
   Boolean(
@@ -93,7 +117,7 @@ function setDialogOpen(value: boolean) {
   if (!value && route.query.task) void router.replace({ query: {} })
 }
 watch(
-  () => [route.query.task, store.snapshot?.board.id],
+  [() => route.query.task, () => store.snapshot?.board.id],
   () => {
     taskLinkError.value = ''
     const taskId = route.query.task
@@ -121,12 +145,14 @@ async function refresh(background = false) {
   if (!store.pending && !store.uncertain) {
     const previousName = store.snapshot?.board.name
     const loaded = await store.load(id, { background })
-    if (!loaded) return
+    if (!loaded) return false
     if (!previousName || name.value === previousName) {
       name.value = store.snapshot?.board.name ?? ''
       nameVersion.value = store.snapshot?.board.version ?? 0
     }
+    return true
   }
+  return false
 }
 async function rename() {
   if (await store.mutate('rename', { name: name.value }, nameVersion.value))
@@ -136,22 +162,6 @@ function clearFilters() {
   query.value = ''
   priority.value = 'all'
   assignee.value = 'all'
-}
-function revalidate() {
-  if (
-    !open.value &&
-    !dragging.value &&
-    !document.hidden &&
-    online.value &&
-    !store.pending &&
-    !store.loading &&
-    !store.uncertain
-  )
-    void refresh(true)
-}
-function connection() {
-  online.value = navigator.onLine
-  if (online.value) revalidate()
 }
 async function move(taskId: string, status: Status, position?: number) {
   if (!canWrite.value) return
@@ -185,18 +195,27 @@ watch(
     }
   },
 )
+function guardSync() {
+  if (!store.pending && !store.uncertain) return true
+  store.error = 'Hãy xác nhận xong thao tác đang lưu trước khi rời board.'
+  return false
+}
+onBeforeRouteLeave(guardSync)
+onBeforeRouteUpdate((to, from) =>
+  to.params.boardId !== from.params.boardId ? guardSync() : true,
+)
+function protectUnload(event: BeforeUnloadEvent) {
+  if (store.pending || store.uncertain) {
+    event.preventDefault()
+    event.returnValue = ''
+  }
+}
 onMounted(() => {
+  window.addEventListener('beforeunload', protectUnload)
   void refresh()
-  timer = setInterval(revalidate, boardConfig.refreshMs)
-  window.addEventListener('focus', revalidate)
-  window.addEventListener('online', connection)
-  window.addEventListener('offline', connection)
 })
 onBeforeUnmount(() => {
-  clearInterval(timer)
-  window.removeEventListener('focus', revalidate)
-  window.removeEventListener('online', connection)
-  window.removeEventListener('offline', connection)
+  window.removeEventListener('beforeunload', protectUnload)
   store.clear()
 })
 </script>
@@ -214,8 +233,14 @@ onBeforeUnmount(() => {
     <PageHeader :title="store.snapshot?.board.name || 'Bảng công việc'">
       <Button
         variant="outline"
-        :disabled="store.pending || store.loading || !!store.uncertain"
-        @click="refresh()"
+        :disabled="
+          store.pending ||
+          store.loading ||
+          store.refreshing ||
+          !!store.uncertain ||
+          !online
+        "
+        @click="refresh(true)"
         >Tải lại</Button
       ><Button v-if="canWrite" @click="add()">Tạo công việc</Button>
     </PageHeader>
@@ -236,6 +261,19 @@ onBeforeUnmount(() => {
       @click="store.retry"
       >Xác nhận lại thao tác</Button
     >
+    <SyncStatus
+      :connection="collabLabel"
+      :value="{
+        online,
+        pending: store.pending,
+        uncertain: !!store.uncertain,
+        loading: store.loading,
+        refreshing: store.refreshing,
+        error: store.error,
+        syncError: store.syncError,
+        lastSyncedAt: store.lastSyncedAt,
+      }"
+    />
     <p v-if="store.loading" role="status" class="mt-4">Đang tải board…</p>
     <p v-if="taskLinkError" role="alert" class="mt-4 text-sm text-destructive">
       {{ taskLinkError }}
@@ -434,13 +472,7 @@ onBeforeUnmount(() => {
           </section>
         </div>
       </template>
-      <p role="status" class="mt-5 text-xs text-muted-foreground">
-        {{
-          store.pending
-            ? 'Đang lưu…'
-            : store.syncError || store.notice || 'Đã đồng bộ.'
-        }}
-      </p>
+
       <OnlineTaskDialog
         :open="open"
         @update:open="setDialogOpen"

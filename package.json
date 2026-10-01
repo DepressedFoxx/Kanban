@@ -8,9 +8,13 @@
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview --host 127.0.0.1",
     "typecheck": "vue-tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run src",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "test:e2e": "playwright test",
+    "test:e2e:report": "playwright show-report output/playwright/report",
+    "test:e2e:cloud": "playwright test --config playwright.cloud.config.ts",
+    "typecheck:e2e": "tsc --noEmit -p tsconfig.e2e.json"
   },
   "dependencies": {
     "@fontsource/be-vietnam-pro": "^5.2.0",
@@ -28,7 +32,9 @@
     "zod": "^4.1.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
     "@electric-sql/pglite": "^0.5.8",
+    "@playwright/test": "1.63.0",
     "@tailwindcss/vite": "^4.1.13",
     "@types/node": "^24.0.0",
     "@vitejs/plugin-vue": "^6.0.1",

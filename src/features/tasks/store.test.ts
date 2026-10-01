@@ -123,3 +123,19 @@ describe('task links and calendar dates', () => {
     expect(commentBodySchema.safeParse('a'.repeat(2001)).success).toBe(false)
   })
 })
+
+it('blocks offline comment retry without replacing its original receipt', async () => {
+  const store = useTaskThreadStore()
+  await store.load(board, task)
+  api.comment.mockRejectedValueOnce(new Error('SYNC_TIMEOUT'))
+  await store.comment(board, task, 'Keep me')
+  const receipt = store.uncertain?.id
+  vi.stubGlobal('navigator', { onLine: false })
+  try {
+    expect(await store.retry()).toBe(false)
+    expect(store.uncertain?.id).toBe(receipt)
+    expect(api.comment).toHaveBeenCalledTimes(1)
+  } finally {
+    vi.unstubAllGlobals()
+  }
+})

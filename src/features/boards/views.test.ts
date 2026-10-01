@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
+vi.mock('@/lib/supabase', () => ({ supabase: null }))
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { createPinia } from 'pinia'
-import { createRouter, createMemoryHistory } from 'vue-router'
+import { createRouter, createMemoryHistory, RouterView } from 'vue-router'
 import BoardsView from './views/BoardsView.vue'
 import OnlineBoardView from './views/OnlineBoardView.vue'
 import OnlineTaskDialog from './OnlineTaskDialog.vue'
@@ -73,7 +74,7 @@ afterEach(() => {
   wrapper?.unmount()
   wrapper = undefined
 })
-async function render(detail = false) {
+async function render(detail = false, routed = false) {
   const pinia = createPinia()
   const router = createRouter({
     history: createMemoryHistory(),
@@ -84,7 +85,7 @@ async function render(detail = false) {
   })
   await router.push(detail ? `/boards/${id}` : `/workspaces/${id}/boards`)
   await router.isReady()
-  wrapper = mount(detail ? OnlineBoardView : BoardsView, {
+  wrapper = mount(routed ? RouterView : detail ? OnlineBoardView : BoardsView, {
     global: { plugins: [pinia, router] },
   })
   await flushPromises()
@@ -154,6 +155,7 @@ describe('online board UI', () => {
       }),
     )
     tick()
+    await new Promise((resolve) => setTimeout(resolve, 220))
     await flushPromises()
     expect(wrapper!.text()).not.toContain('Đang tải board')
     expect(wrapper!.text()).toContain('Tạo công việc')
@@ -189,6 +191,27 @@ describe('online board UI', () => {
     })
     await flushPromises()
     expect(wrapper!.text()).toContain('Task không tồn tại trong board này')
+  })
+  it('keeps a new task draft open when a collaboration snapshot arrives', async () => {
+    const { pinia } = await render(true)
+    await wrapper!
+      .findAll('button')
+      .find((button) => button.text() === 'Tạo công việc')!
+      .trigger('click')
+    await flushPromises()
+    const input = document.querySelector(
+      '#online-task-title',
+    ) as HTMLInputElement
+    input.value = 'New unsaved task'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    await flushPromises()
+    const store = useOnlineBoardStore(pinia)
+    store.snapshot = { ...snapshot(), board: { ...board, version: 2 } } as any
+    await flushPromises()
+    expect(
+      (document.querySelector('#online-task-title') as HTMLInputElement).value,
+    ).toBe('New unsaved task')
+    expect(document.body.textContent).toContain('Giữ bản nháp để lưu')
   })
   it('preserves a dirty board name and requires reconciliation after a new snapshot', async () => {
     const { pinia } = await render(true)
@@ -227,7 +250,7 @@ describe('online board UI', () => {
     })
     await wrapper.setProps({ open: true })
     await wrapper.get('#online-task-title').setValue('Keep draft')
-    api.mutate.mockRejectedValue({ code: '40001', message: 'BOARD_CONFLICT' })
+    api.mutate.mockRejectedValue({ code: 'PT409', message: 'BOARD_CONFLICT' })
     api.snapshot.mockResolvedValue({
       ...snapshot(),
       board: { ...board, version: 2 },
@@ -325,4 +348,32 @@ describe('task draft protection', () => {
       (document.querySelector('#online-task-title') as HTMLInputElement).value,
     ).toBe('Server title')
   })
+})
+
+it('blocks navigation and warns on reload while a board write is uncertain, even with no task dialog', async () => {
+  const { pinia, router } = await render(true, true)
+  const store = useOnlineBoardStore(pinia)
+  api.mutate.mockRejectedValueOnce(new Error('lost response'))
+  await store.mutate('rename', { name: 'New' })
+  await flushPromises()
+  expect(wrapper!.find('[data-sync-state="uncertain"]').exists()).toBe(true)
+  const unload = new Event('beforeunload', { cancelable: true })
+  window.dispatchEvent(unload)
+  expect(unload.defaultPrevented).toBe(true)
+  await router.push(`/workspaces/${id}/boards`)
+  expect(router.currentRoute.value.path).toBe(`/boards/${id}`)
+  api.mutate.mockResolvedValue(snapshot())
+  await store.retry()
+  await router.push(`/workspaces/${id}/boards`)
+  expect(router.currentRoute.value.path).toBe(`/workspaces/${id}/boards`)
+})
+it('opens a task through its card with the sync route guards active', async () => {
+  const { router } = await render(true, true)
+  await wrapper!
+    .findAll('button')
+    .find((b) => b.text() === 'Task A')!
+    .trigger('click')
+  await flushPromises()
+  expect(router.currentRoute.value.query.task).toBe(taskId)
+  expect(document.querySelector('#online-task-title')).not.toBeNull()
 })

@@ -1,4 +1,9 @@
 import { ref } from 'vue'
+import {
+  isOffline,
+  isAccessDenied,
+  isDefinitiveFailure,
+} from '@/features/sync/request'
 import { defineStore } from 'pinia'
 import { tasksApi } from '@/features/tasks/api'
 import {
@@ -27,6 +32,7 @@ export const useTaskThreadStore = defineStore('task-thread', () => {
     id: string
     body: string
   } | null>(null)
+  const lastSyncedAt = ref('')
   let generation = 0,
     scope = ''
   function clear() {
@@ -45,10 +51,10 @@ export const useTaskThreadStore = defineStore('task-thread', () => {
     moreComments.value = false
     moreActivity.value = false
     lastSuccess.value = ''
+    lastSyncedAt.value = ''
   }
   function fail(cause: unknown, background = false) {
-    const code = (cause as { code?: string })?.code
-    if (code === '42501' || code === 'PGRST301' || code === 'PGRST303') {
+    if (isAccessDenied(cause)) {
       comments.value = []
       activity.value = []
       canComment.value = false
@@ -121,7 +127,9 @@ export const useTaskThreadStore = defineStore('task-thread', () => {
       })
       if (request !== generation) return false
       canComment.value = result.can_comment
+      denied.value = false
       syncError.value = ''
+      lastSyncedAt.value = new Date().toISOString()
       if (mode !== 'activity') {
         if (mode === 'comments' || !comments.value.length)
           moreComments.value = result.comments.length === taskConfig.pageSize
@@ -165,12 +173,13 @@ export const useTaskThreadStore = defineStore('task-thread', () => {
       mergeActivity(result.activity)
       canComment.value = result.can_comment
       uncertain.value = null
+      syncError.value = ''
+      lastSyncedAt.value = new Date().toISOString()
       lastSuccess.value = attempt.id
       return true
     } catch (cause) {
       if (request !== generation) return false
-      const code = (cause as { code?: string })?.code
-      if (!code || !/^(22|23|42|40|PGRST)/.test(code)) uncertain.value = attempt
+      if (!isDefinitiveFailure(cause)) uncertain.value = attempt
       else {
         uncertain.value = null
         if ((cause as { message?: string }).message?.includes('ARCHIVED'))
@@ -191,7 +200,7 @@ export const useTaskThreadStore = defineStore('task-thread', () => {
       scope !== board + ':' + task
     )
       return false
-    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    if (isOffline()) {
       error.value = 'Đang offline. Kết nối lại trước khi gửi.'
       return false
     }
@@ -209,6 +218,10 @@ export const useTaskThreadStore = defineStore('task-thread', () => {
   }
   async function retry() {
     if (!uncertain.value || pending.value) return false
+    if (isOffline()) {
+      error.value = 'Đang offline. Kết nối lại trước khi xác nhận.'
+      return false
+    }
     return send(uncertain.value)
   }
   return {
@@ -224,6 +237,7 @@ export const useTaskThreadStore = defineStore('task-thread', () => {
     moreComments,
     moreActivity,
     lastSuccess,
+    lastSyncedAt,
     uncertain,
     clear,
     load,
