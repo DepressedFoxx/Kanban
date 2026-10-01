@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PageHeader from '@/components/PageHeader.vue'
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { Button } from '@/components/ui/button'
@@ -126,7 +127,7 @@ async function revoke(invitation: string) {
 }
 </script>
 <template>
-  <main class="mx-auto max-w-5xl p-5 lg:p-9">
+  <main class="workspace-page">
     <Button as-child variant="outline" class="mb-4 mr-4"
       ><RouterLink :to="`/workspaces/${id}/boards`"
         >Board của workspace</RouterLink
@@ -137,17 +138,14 @@ async function revoke(invitation: string) {
       class="text-sm text-primary underline"
       >← Đổi workspace</RouterLink
     >
-    <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
-      <h1 class="break-words text-2xl font-semibold">
-        {{ store.current?.name ?? 'Thành viên workspace' }}
-      </h1>
+    <PageHeader title="Thành viên" :description="store.current?.name">
       <Button
         variant="outline"
         :disabled="store.loading || store.pending"
         @click="refresh"
         >Tải lại</Button
       >
-    </div>
+    </PageHeader>
     <p v-if="store.loading" role="status" class="mt-5">
       Đang kiểm tra quyền truy cập…
     </p>
@@ -234,6 +232,10 @@ async function revoke(invitation: string) {
       </section>
       <section v-if="store.owner" class="mt-6 rounded-xl border bg-card p-5">
         <h2 class="text-lg font-semibold">Mời thành viên</h2>
+        <p class="mt-2 text-sm text-muted-foreground">
+          Member: tạo, sửa task và bình luận. Viewer: chỉ xem. Owner: quản lý
+          workspace và thành viên.
+        </p>
         <p class="mt-2 text-sm text-muted-foreground">
           Link có hiệu lực {{ workspaceConfig.invitationDays }} ngày, chỉ dành
           cho email được mời. Bạn tự gửi link cho người nhận; ứng dụng không gửi

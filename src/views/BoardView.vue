@@ -52,7 +52,7 @@ function clearFilters() {
 </script>
 
 <template>
-  <div class="mx-auto max-w-[1600px] p-5 lg:p-9">
+  <div class="workspace-page">
     <div class="mb-7 flex flex-wrap items-start justify-between gap-5">
       <div>
         <p

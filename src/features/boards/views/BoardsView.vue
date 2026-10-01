@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PageHeader from '@/components/PageHeader.vue'
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
@@ -66,32 +67,19 @@ onBeforeUnmount(() => {
 })
 </script>
 <template>
-  <main class="mx-auto max-w-5xl p-5 lg:p-9">
+  <main class="workspace-page">
     <RouterLink to="/workspaces" class="text-sm text-primary"
       >← Đổi workspace</RouterLink
     >
-    <div class="mt-4 flex flex-wrap items-start justify-between gap-3">
-      <div>
-        <h1 class="text-2xl font-semibold">
-          Board · {{ workspace.current?.name || 'Workspace' }}
-        </h1>
-        <p class="mt-2 text-sm text-muted-foreground">
-          Chọn board để quản lý công việc của nhóm.
-        </p>
-      </div>
-      <div class="flex flex-wrap gap-2">
-        <Button as-child variant="outline"
-          ><RouterLink :to="`/workspaces/${id}/members`"
-            >Thành viên</RouterLink
-          ></Button
-        ><Button
-          variant="outline"
-          :disabled="loading || pending"
-          @click="refresh"
-          >Tải lại</Button
-        >
-      </div>
-    </div>
+    <PageHeader :title="'Board · ' + (workspace.current?.name || 'Workspace')">
+      <Button as-child variant="outline"
+        ><RouterLink :to="`/workspaces/${id}/members`"
+          >Thành viên</RouterLink
+        ></Button
+      ><Button variant="outline" :disabled="loading || pending" @click="refresh"
+        >Tải lại</Button
+      >
+    </PageHeader>
     <p
       v-if="error || workspace.error"
       role="alert"

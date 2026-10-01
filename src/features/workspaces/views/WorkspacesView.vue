@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PageHeader from '@/components/PageHeader.vue'
 import { onMounted, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
@@ -17,21 +18,18 @@ async function create() {
 }
 </script>
 <template>
-  <main class="mx-auto max-w-5xl p-5 lg:p-9">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <div>
-        <h1 class="text-2xl font-semibold">Workspace của bạn</h1>
-        <p class="mt-2 text-sm text-muted-foreground">
-          Tạo không gian riêng và mời thành viên cùng tham gia.
-        </p>
-      </div>
+  <main class="workspace-page">
+    <PageHeader
+      title="Workspace của bạn"
+      description="Tạo không gian riêng và mời thành viên cùng tham gia."
+    >
       <Button
         variant="outline"
         :disabled="store.loading || store.pending"
         @click="store.load()"
         >Tải lại</Button
       >
-    </div>
+    </PageHeader>
     <p
       v-if="store.error"
       role="alert"
