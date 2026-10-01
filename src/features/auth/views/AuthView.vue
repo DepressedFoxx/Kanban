@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { appConfig } from '@/config/app'
 import { authLinkError } from '@/lib/supabase'
-import { computed, reactive, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,6 +10,8 @@ import { useAuthStore } from '@/stores/auth'
 import { authConfig } from '../config'
 import { safeRedirect } from '../navigation'
 import AuthFeedback from '../components/AuthFeedback.vue'
+const showPassword = ref(false)
+const showVerification = ref(false)
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
@@ -37,6 +39,8 @@ const labels = {
 watch(
   mode,
   () => {
+    showPassword.value = false
+    showVerification.value = false
     auth.clearFeedback()
     form.password = ''
     form.confirmPassword = ''
@@ -122,7 +126,7 @@ async function submit() {
             ><Input
               id="auth-password"
               v-model="form.password"
-              type="password"
+              :type="showPassword ? 'text' : 'password'"
               :autocomplete="
                 mode === 'login' ? 'current-password' : 'new-password'
               "
@@ -140,12 +144,20 @@ async function submit() {
             ><Input
               id="auth-confirm"
               v-model="form.confirmPassword"
-              type="password"
+              :type="showPassword ? 'text' : 'password'"
               autocomplete="new-password"
               required
               :disabled="auth.pending"
             />
           </div>
+          <Button
+            v-if="mode !== 'forgot'"
+            type="button"
+            variant="ghost"
+            :aria-pressed="showPassword"
+            @click="showPassword = !showPassword"
+            >{{ showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu' }}</Button
+          >
           <Button
             type="submit"
             class="w-full"
@@ -157,7 +169,7 @@ async function submit() {
             >{{ auth.pending ? 'Đang xử lý…' : labels[mode] }}</Button
           >
           <Button
-            v-if="mode === 'login' || mode === 'register'"
+            v-if="showVerification && (mode === 'login' || mode === 'register')"
             type="button"
             variant="outline"
             :disabled="auth.pending || !auth.configured || !form.email.trim()"
@@ -165,6 +177,13 @@ async function submit() {
             >Gửi lại email xác minh</Button
           >
         </form>
+        <Button
+          v-if="mode === 'login' || mode === 'register'"
+          variant="link"
+          :aria-expanded="showVerification"
+          @click="showVerification = !showVerification"
+          >Chưa nhận được email xác minh?</Button
+        >
         <nav
           class="flex flex-wrap gap-x-4 gap-y-3 text-sm text-primary"
           aria-label="Tài khoản"

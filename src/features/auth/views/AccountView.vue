@@ -62,8 +62,8 @@ watch(
         >
       </section>
       <p class="text-xs leading-5 text-muted-foreground">
-        Hồ sơ được lưu trên Supabase. Công việc hiện vẫn lưu trên trình duyệt
-        này và chưa đồng bộ giữa các thiết bị.
+        Hồ sơ và công việc trong workspace được lưu trên máy chủ. Đăng nhập cùng
+        tài khoản để truy cập trên các thiết bị khác.
       </p>
     </div>
   </main>
