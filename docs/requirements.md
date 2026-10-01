@@ -121,7 +121,7 @@ Mỗi tài khoản được tự tạo workspace mới; Owner trong workspace A 
 - comments, activity_events: liên kết task/board, actor và thời điểm do server xác nhận.
 - mutation receipts hoặc cơ chế tương đương: chống thực thi trùng cùng mutationId.
 
-Mọi liên kết task → cột → board → workspace phải nhất quán bằng constraint/transaction và authorization, không chỉ kiểm tra frontend. Workspace và board/task đã có migration, RLS và RPC. Comment, activity và realtime vẫn là mô hình mục tiêu.
+Mọi liên kết task → cột → board → workspace phải nhất quán bằng constraint/transaction và authorization, không chỉ kiểm tra frontend. Workspace và board/task đã có migration, RLS và RPC. Comment và activity đã có migration 003; realtime vẫn là mô hình mục tiêu.
 
 ## 7. Yêu cầu chất lượng
 
@@ -144,7 +144,7 @@ Không cần thêm các mục này để gọi M3 là MVP. Production có ngư�
 - Auth/workspace: có Supabase Auth, tạo workspace, membership và lời mời. Cloud đã kiểm tra với Owner; chưa hoàn thành luồng nhiều tài khoản.
 - Board/task: nhiều board online, task CRUD qua RPC, assignee membership, tìm/lọc, drag-and-drop, archive/restore, kiểm soát phiên bản và retry. Xem [module board](boards.md).
 - Board cá nhân cũ: localStorage tại `/personal-board`, giữ nguyên dữ liệu cũ; không tự import online.
-- Cộng tác: chưa có comment, activity và realtime. Hiện tải lại định kỳ, chưa đạt M3.
+- Cộng tác: đã có bình luận và lịch sử task qua migration 003; xem [module task](tasks.md). Hiện tải lại định kỳ, chưa có realtime và chưa đạt M3.
 - Kiểm thử: 69 test local, gồm SQL/RLS và UI/store; cloud Owner đã kiểm tra các thao tác board/task chính. Không đồng nghĩa nghiệm thu concurrent writes nhiều connection hoặc nhiều tài khoản.
 
 ## 10. Kịch bản nghiệm thu MVP

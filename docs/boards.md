@@ -64,3 +64,7 @@ Cloud với tài khoản Owner: đã tạo board, tạo task có assignee/ngày,
 ### Tải lại nền không nhấp nháy
 
 Polling 30 giây/focus/reconnect dùng trạng thái refreshing riêng, không bật loading và không ẩn/khóa nút đang dùng. Snapshot không đổi giữ nguyên object; response poll cũ không được ghi đè mutation mới. Lỗi mạng tạm giữ bản đã tải kèm thông báo đồng bộ; lỗi mất quyền vẫn xóa dữ liệu riêng. Tải lần đầu và nút Tải lại vẫn có loading.
+
+## Task chi tiết
+
+Bình luận, lịch sử, deep link và nhãn quá hạn được bổ sung trong migration 003. Xem [module task](tasks.md). Các giới hạn comment/activity/quá hạn ở phần báo cáo triển khai board ban đầu phía trên đã được cập nhật bởi module này; realtime vẫn chưa có.

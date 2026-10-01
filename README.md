@@ -90,3 +90,7 @@ Module Supabase Auth: xem [thiết lập và kiểm thử](docs/auth.md). Cần 
 ## Board online trong workspace
 
 Module board/task đã lưu trên Supabase với phân quyền, lưu trữ/khôi phục, kiểm soát phiên bản và retry an toàn. Xem [setup, kiến trúc và kiểm thử board](docs/boards.md). Mở Workspace & board để bắt đầu. Board cá nhân local được giữ tại `/personal-board`; `/board` chuyển về danh sách workspace. Chưa có realtime/comment/activity.
+
+## Task chi tiết
+
+Xem [module task](docs/tasks.md) cho deep link, bình luận, lịch sử thay đổi và quá hạn. Cần migration `202609300003_task_details.sql` sau hai migration workspace/board. Bình luận và activity đã có; realtime vẫn chưa triển khai.
