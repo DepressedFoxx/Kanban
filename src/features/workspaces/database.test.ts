@@ -60,6 +60,12 @@ beforeAll(async () => {
       'utf8',
     ),
   )
+  await db.exec(
+    readFileSync(
+      resolve('supabase/migrations/202609300004_invitation_preview.sql'),
+      'utf8',
+    ),
+  )
 }, 60000)
 beforeEach(async () => {
   await db.exec('truncate public.workspaces cascade')
@@ -251,5 +257,63 @@ describe('workspace SQL authorization', () => {
     await expect(
       asUser(owner, "select public.workspace_rename($1,'No')", [other]),
     ).rejects.toThrow('OWNER_REQUIRED')
+  })
+})
+
+describe('invitation preview', () => {
+  it('shows only the recipient workspace and role without accepting', async () => {
+    const token = await invite('member@example.com', 'viewer')
+    const result = await asUser(
+      member,
+      'select public.workspace_invitation_preview($1) as preview',
+      [token],
+    )
+    expect(result.rows[0]!.preview).toMatchObject({
+      workspace_name: 'Team A',
+      role: 'viewer',
+    })
+    expect(
+      (await asUser(member, 'select * from public.workspace_list()')).rows,
+    ).toHaveLength(0)
+    await expect(
+      asUser(outsider, 'select public.workspace_invitation_preview($1)', [
+        token,
+      ]),
+    ).rejects.toThrow('INVITATION_EMAIL_MISMATCH')
+    await expect(
+      asUser(unverified, 'select public.workspace_invitation_preview($1)', [
+        token,
+      ]),
+    ).rejects.toThrow('VERIFIED_ACCOUNT_REQUIRED')
+    await db.exec('update public.workspace_invitations set revoked_at=now()')
+    await expect(
+      asUser(member, 'select public.workspace_invitation_preview($1)', [token]),
+    ).rejects.toThrow('INVITATION_INVALID')
+  })
+  it('rejects expired, accepted, invalid tokens and anonymous callers', async () => {
+    const token = await invite()
+    await db.exec(
+      "update public.workspace_invitations set expires_at=now()-interval '1 second'",
+    )
+    await expect(
+      asUser(member, 'select public.workspace_invitation_preview($1)', [token]),
+    ).rejects.toThrow('INVITATION_INVALID')
+    const accepted = await join()
+    await expect(
+      asUser(member, 'select public.workspace_invitation_preview($1)', [
+        accepted,
+      ]),
+    ).rejects.toThrow('INVITATION_INVALID')
+    await expect(
+      asUser(member, 'select public.workspace_invitation_preview($1)', ['bad']),
+    ).rejects.toThrow('INVITATION_INVALID')
+    await expect(
+      db.transaction(async (tx) => {
+        await tx.exec('set local role anon')
+        await tx.query('select public.workspace_invitation_preview($1)', [
+          token,
+        ])
+      }),
+    ).rejects.toThrow('permission denied')
   })
 })

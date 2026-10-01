@@ -14,6 +14,21 @@ async function rpc(name: string, args: Record<string, unknown> = {}) {
   return data
 }
 export const workspaceApi = {
+  preview: async (token: string) =>
+    z
+      .object({
+        workspace_name: z.string(),
+        role: z.enum(['member', 'viewer']),
+        expires_at: z.string(),
+      })
+      .parse(
+        await rpc('workspace_invitation_preview', {
+          p_token: z
+            .string()
+            .regex(/^[a-f0-9]{64}$/)
+            .parse(token),
+        }),
+      ),
   list: async () => workspaceSchema.array().parse(await rpc('workspace_list')),
   members: async (id: string) =>
     memberSchema
