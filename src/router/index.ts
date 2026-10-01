@@ -5,6 +5,7 @@ import { appConfig } from '@/config/app'
 import { authConfig } from '@/features/auth/config'
 import { authRedirect, safeRedirect } from '@/features/auth/navigation'
 import { useBoardStore } from '@/stores/board'
+import { useTaskThreadStore } from '@/stores/taskThread'
 import { useOnlineBoardStore } from '@/stores/onlineBoard'
 import { useAuthStore } from '@/stores/auth'
 import { useWorkspaceStore } from '@/stores/workspaces'
@@ -93,6 +94,7 @@ export function installAuthGuards(pinia: Pinia) {
     () => {
       useBoardStore(pinia).clear()
       useOnlineBoardStore(pinia).clear()
+      useTaskThreadStore(pinia).clear()
       useWorkspaceStore(pinia).clear()
     },
     { flush: 'sync' },
@@ -104,7 +106,7 @@ export function installAuthGuards(pinia: Pinia) {
     const result = authRedirect(
       Boolean(to.meta.requiresAuth),
       auth.authenticated,
-      to.path,
+      to.fullPath,
     )
     if (result !== true) return result
     if (to.meta.guestOnly && auth.authenticated)
@@ -123,7 +125,7 @@ export function installAuthGuards(pinia: Pinia) {
       if (!authenticated && route.meta.requiresAuth)
         void router.replace({
           path: authConfig.routes.login,
-          query: { redirect: safeRedirect(route.path) },
+          query: { redirect: safeRedirect(route.fullPath) },
         })
     },
   )

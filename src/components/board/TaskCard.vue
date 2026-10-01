@@ -7,6 +7,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
+import { isOverdue } from '@/features/tasks/model'
 import { CalendarDays, GripVertical } from '@lucide/vue'
 import {
   columns,
@@ -15,7 +17,22 @@ import {
   type Status,
 } from '@/features/board/model'
 
-defineProps<{ task: Task; dragDisabled: boolean; readOnly?: boolean }>()
+const props = defineProps<{
+  task: Task
+  dragDisabled: boolean
+  readOnly?: boolean
+}>()
+const now = ref(new Date())
+let dateTimer: ReturnType<typeof setInterval> | undefined
+onMounted(() => {
+  dateTimer = setInterval(() => {
+    now.value = new Date()
+  }, 60000)
+})
+onBeforeUnmount(() => clearInterval(dateTimer))
+const overdue = computed(() =>
+  isOverdue(props.task.dueDate, props.task.status, now.value),
+)
 const emit = defineEmits<{
   edit: [task: Task]
   move: [id: string, status: Status]
@@ -61,6 +78,9 @@ const emit = defineEmits<{
         }}</span
       >
     </div>
+    <p v-if="overdue" class="mt-3 text-xs font-medium text-destructive">
+      Quá hạn · {{ task.dueDate }}
+    </p>
     <label class="sr-only" :for="`move-${task.id}`"
       >Chuyển trạng thái: {{ task.title }}</label
     >

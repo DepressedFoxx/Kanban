@@ -109,7 +109,7 @@ export const useOnlineBoardStore = defineStore('online-board', () => {
       snapshot.value = value
       uncertain.value = null
       lastSuccess.value = mutation.id
-      notice.value = 'Đã lưu trên Supabase.'
+      notice.value = 'Đã lưu.'
       return true
     } catch (cause) {
       if (request !== generation) return false

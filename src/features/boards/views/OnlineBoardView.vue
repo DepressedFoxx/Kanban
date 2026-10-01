@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import PageHeader from '@/components/PageHeader.vue'
 import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import draggable from 'vuedraggable'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,6 +24,8 @@ import {
 import { appConfig } from '@/config/app'
 import { boardConfig, type OnlineTask } from '../model'
 import { useOnlineBoardStore } from '@/stores/onlineBoard'
+const router = useRouter()
+const taskLinkError = ref('')
 const route = useRoute(),
   store = useOnlineBoardStore(),
   id = String(route.params.boardId)
@@ -76,15 +79,44 @@ function displayTask(task: OnlineTask) {
     dueDate: task.due_date ?? '',
   }
 }
-function add(status: Status = 'todo') {
+async function add(status: Status = 'todo') {
+  if (route.query.task) await router.replace({ query: {} })
   selected.value = null
   initial.value = status
   open.value = true
 }
 function edit(task: OnlineTask) {
-  selected.value = task
-  open.value = true
+  void router.replace({ query: { task: task.id } })
 }
+function setDialogOpen(value: boolean) {
+  open.value = value
+  if (!value && route.query.task) void router.replace({ query: {} })
+}
+watch(
+  () => [route.query.task, store.snapshot?.board.id],
+  () => {
+    taskLinkError.value = ''
+    const taskId = route.query.task
+    if (!taskId) {
+      open.value = false
+      return
+    }
+    if (!store.snapshot) return
+    const found =
+      typeof taskId === 'string'
+        ? store.snapshot.tasks.find((t) => t.id === taskId)
+        : undefined
+    if (!found) {
+      open.value = false
+      taskLinkError.value =
+        'Task không tồn tại trong board này hoặc đường dẫn không hợp lệ.'
+      return
+    }
+    selected.value = found
+    open.value = true
+  },
+  { immediate: true },
+)
 async function refresh(background = false) {
   if (!store.pending && !store.uncertain) {
     const previousName = store.snapshot?.board.name
@@ -169,7 +201,7 @@ onBeforeUnmount(() => {
 })
 </script>
 <template>
-  <main class="mx-auto max-w-[1600px] p-5 lg:p-9">
+  <main class="workspace-page">
     <RouterLink
       :to="
         store.snapshot
@@ -179,24 +211,14 @@ onBeforeUnmount(() => {
       class="text-sm text-primary"
       >← Danh sách board</RouterLink
     >
-    <div class="mt-4 flex flex-wrap items-start justify-between gap-3">
-      <div>
-        <h1 class="break-words text-3xl font-semibold">
-          {{ store.snapshot?.board.name || 'Bảng công việc' }}
-        </h1>
-        <p class="mt-2 text-sm text-muted-foreground">
-          Board workspace · Dữ liệu lưu trên Supabase
-        </p>
-      </div>
-      <div class="flex gap-2">
-        <Button
-          variant="outline"
-          :disabled="store.pending || store.loading || !!store.uncertain"
-          @click="refresh()"
-          >Tải lại</Button
-        ><Button v-if="canWrite" @click="add()">Tạo công việc</Button>
-      </div>
-    </div>
+    <PageHeader :title="store.snapshot?.board.name || 'Bảng công việc'">
+      <Button
+        variant="outline"
+        :disabled="store.pending || store.loading || !!store.uncertain"
+        @click="refresh()"
+        >Tải lại</Button
+      ><Button v-if="canWrite" @click="add()">Tạo công việc</Button>
+    </PageHeader>
     <p v-if="!online" role="alert" class="mt-4 rounded-lg bg-amber-50 p-3">
       Đang offline. Kết nối lại để lưu thay đổi.
     </p>
@@ -215,6 +237,9 @@ onBeforeUnmount(() => {
       >Xác nhận lại thao tác</Button
     >
     <p v-if="store.loading" role="status" class="mt-4">Đang tải board…</p>
+    <p v-if="taskLinkError" role="alert" class="mt-4 text-sm text-destructive">
+      {{ taskLinkError }}
+    </p>
     <template v-if="store.snapshot">
       <p
         v-if="
@@ -228,50 +253,53 @@ onBeforeUnmount(() => {
             : 'Vai trò Viewer: bạn chỉ có quyền xem.'
         }}
       </p>
-      <form
-        v-if="store.snapshot.role === 'owner'"
-        class="mt-5 flex flex-wrap items-end gap-2"
-        @submit.prevent="rename"
-      >
-        <div class="field min-w-0 flex-1 basis-full sm:basis-auto">
-          <Label for="rename-board">Tên board</Label
-          ><Input
-            id="rename-board"
-            v-model="name"
-            :maxlength="boardConfig.nameMaxLength"
-            :disabled="!canWrite"
-          />
-        </div>
-        <Button
-          type="submit"
-          variant="outline"
-          :disabled="
-            !canWrite ||
-            !name.trim() ||
-            nameVersion !== store.snapshot.board.version
-          "
-          >Lưu tên</Button
-        ><Button
-          type="button"
-          variant="outline"
-          :disabled="
-            store.pending || store.loading || !!store.uncertain || !online
-          "
-          @click="
-            store.mutate(
-              store.snapshot.board.archived_at
-                ? 'restore_board'
-                : 'archive_board',
-              {},
-            )
-          "
-          >{{
-            store.snapshot.board.archived_at
-              ? 'Khôi phục board'
-              : 'Lưu trữ board'
-          }}</Button
+      <details v-if="store.snapshot.role === 'owner'" class="board-options">
+        <summary>Tuỳ chọn board</summary>
+        <form
+          v-if="store.snapshot.role === 'owner'"
+          class="mt-5 flex flex-wrap items-end gap-2"
+          @submit.prevent="rename"
         >
-      </form>
+          <div class="field min-w-0 flex-1 basis-full sm:basis-auto">
+            <Label for="rename-board">Tên board</Label
+            ><Input
+              id="rename-board"
+              v-model="name"
+              :maxlength="boardConfig.nameMaxLength"
+              :disabled="!canWrite"
+            />
+          </div>
+          <Button
+            type="submit"
+            variant="outline"
+            :disabled="
+              !canWrite ||
+              !name.trim() ||
+              nameVersion !== store.snapshot.board.version
+            "
+            >Lưu tên</Button
+          ><Button
+            type="button"
+            variant="outline"
+            :disabled="
+              store.pending || store.loading || !!store.uncertain || !online
+            "
+            @click="
+              store.mutate(
+                store.snapshot.board.archived_at
+                  ? 'restore_board'
+                  : 'archive_board',
+                {},
+              )
+            "
+            >{{
+              store.snapshot.board.archived_at
+                ? 'Khôi phục board'
+                : 'Lưu trữ board'
+            }}</Button
+          >
+        </form>
+      </details>
       <div
         v-if="
           store.snapshot.role === 'owner' &&
@@ -308,7 +336,11 @@ onBeforeUnmount(() => {
           :key="task.id"
           class="flex items-center justify-between gap-3 rounded-lg border p-4"
         >
-          <span class="min-w-0 break-words">{{ task.title }}</span
+          <Button
+            variant="link"
+            class="min-w-0 whitespace-normal text-left"
+            @click="edit(task)"
+            >{{ task.title }}</Button
           ><Button
             v-if="canWrite"
             variant="outline"
@@ -406,12 +438,12 @@ onBeforeUnmount(() => {
         {{
           store.pending
             ? 'Đang lưu…'
-            : store.syncError || store.notice || 'Đã tải dữ liệu từ Supabase.'
+            : store.syncError || store.notice || 'Đã đồng bộ.'
         }}
-        · Tự kiểm tra cập nhật mỗi 30 giây khi không mở form.
       </p>
       <OnlineTaskDialog
-        v-model:open="open"
+        :open="open"
+        @update:open="setDialogOpen"
         :task="selected"
         :status="initial"
       />

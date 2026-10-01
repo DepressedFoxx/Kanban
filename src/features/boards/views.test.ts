@@ -19,6 +19,15 @@ const ws = vi.hoisted(() => ({
   invitations: vi.fn(),
 }))
 vi.mock('./api', () => ({ boardsApi: api }))
+vi.mock('@/features/tasks/api', () => ({
+  tasksApi: {
+    thread: vi.fn(async () => ({
+      can_comment: false,
+      comments: [],
+      activity: [],
+    })),
+  },
+}))
 vi.mock('@/features/workspaces/api', () => ({ workspaceApi: ws }))
 const id = '20000000-0000-4000-8000-000000000001'
 const taskId = '30000000-0000-4000-8000-000000000001'
@@ -155,6 +164,32 @@ describe('online board UI', () => {
     expect(wrapper!.get('#rename-board').element).toBe(input)
     expect(wrapper!.get('.task-card').element).toBe(card)
   })
+  it('opens the exact task from its URL and reports unknown task links', async () => {
+    const { router } = await render(true)
+    await router.replace({ query: { task: taskId } })
+    await flushPromises()
+    expect(
+      (document.querySelector('#online-task-title') as HTMLInputElement)?.value,
+    ).toBe('Task A')
+    const copyButton = [...document.querySelectorAll('button')].find((button) =>
+      button.textContent?.includes('Sao chép link task'),
+    )!
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    })
+    copyButton.click()
+    await flushPromises()
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining('?task=' + taskId),
+    )
+    await router.replace({
+      query: { task: '40000000-0000-4000-8000-000000000001' },
+    })
+    await flushPromises()
+    expect(wrapper!.text()).toContain('Task không tồn tại trong board này')
+  })
   it('preserves a dirty board name and requires reconciliation after a new snapshot', async () => {
     const { pinia } = await render(true)
     await wrapper!.get('#rename-board').setValue('My draft name')
@@ -202,7 +237,92 @@ describe('online board UI', () => {
     expect(
       (wrapper.get('#online-task-title').element as HTMLInputElement).value,
     ).toBe('Keep draft')
-    expect(wrapper.text()).toContain('Đã đối chiếu')
+    expect(wrapper.text()).toContain('Giữ bản nháp để lưu')
     expect(wrapper.emitted('update:open')).toBeUndefined()
+  })
+})
+
+describe('task draft protection', () => {
+  async function openTask() {
+    const pinia = createPinia()
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/boards/:boardId', component: OnlineBoardView },
+        {
+          path: '/workspaces',
+          component: { template: '<div>Workspaces</div>' },
+        },
+      ],
+    })
+    await router.push(`/boards/${id}?task=${taskId}`)
+    await router.isReady()
+    wrapper = mount(
+      { template: '<router-view />' },
+      { global: { plugins: [pinia, router] } },
+    )
+    await flushPromises()
+    return { router, pinia }
+  }
+  function button(label: string) {
+    const element = [...document.querySelectorAll('button')].find(
+      (b) => b.textContent?.trim() === label,
+    )
+    expect(element).toBeTruthy()
+    element!.click()
+  }
+  async function editTitle(value: string) {
+    const input = document.querySelector(
+      '#online-task-title',
+    ) as HTMLInputElement
+    input.value = value
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    await flushPromises()
+  }
+  it('keeps a draft when canceling dismissal and closes only after discard', async () => {
+    await openTask()
+    await editTitle('Unsaved task')
+    button('Đóng')
+    await flushPromises()
+    expect(document.body.textContent).toContain('Bỏ thay đổi chưa lưu?')
+    button('Tiếp tục chỉnh sửa')
+    await flushPromises()
+    expect(
+      (document.querySelector('#online-task-title') as HTMLInputElement).value,
+    ).toBe('Unsaved task')
+    button('Đóng')
+    await flushPromises()
+    button('Bỏ thay đổi')
+    await flushPromises()
+    expect(document.querySelector('#online-task-title')).toBeNull()
+    expect(api.mutate).not.toHaveBeenCalled()
+  })
+  it('blocks route navigation until the user decides what to do with the draft', async () => {
+    const { router } = await openTask()
+    await editTitle('Stay here')
+    const navigation = router.push('/workspaces')
+    await flushPromises()
+    expect(document.body.textContent).toContain('Bỏ thay đổi chưa lưu?')
+    button('Tiếp tục chỉnh sửa')
+    await navigation
+    expect(router.currentRoute.value.path).toBe(`/boards/${id}`)
+  })
+  it('shows server and draft values and can adopt the latest task', async () => {
+    const { pinia } = await openTask()
+    await editTitle('My draft')
+    const store = useOnlineBoardStore(pinia)
+    store.snapshot = {
+      ...snapshot(),
+      board: { ...board, version: 2 },
+      tasks: [{ ...task, title: 'Server title' }],
+    } as any
+    await flushPromises()
+    expect(document.body.textContent).toContain('Hiện tại: Server title')
+    expect(document.body.textContent).toContain('Bản nháp: My draft')
+    button('Dùng bản hiện tại')
+    await flushPromises()
+    expect(
+      (document.querySelector('#online-task-title') as HTMLInputElement).value,
+    ).toBe('Server title')
   })
 })
