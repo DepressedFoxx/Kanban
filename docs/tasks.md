@@ -47,3 +47,5 @@ Chưa có edit/delete comment, mention, đính kèm hoặc realtime subscription
 - Browser cloud: tạo task QA, nhãn quá hạn, mở permalink sau reload, cập nhật mô tả và lịch sử ghi đúng tác giả/giá trị trước-sau; tải danh sách bình luận thành công.
 - Đã quan sát giao diện ở viewport mobile 390px. Chưa gửi bình luận thử trên cloud; ghi bình luận, retry và phân quyền được kiểm thử bằng SQL local/store/UI.
 - Build còn cảnh báo chunk lớn hơn 500 kB và annotation từ Zod; không làm build thất bại.
+
+Cập nhật 2026-10-01: collab Postgres Changes đã triển khai cho board/task và thảo luận; xem [tài liệu collab](collab.md). Các ghi chú cũ về chưa có realtime được thay thế bởi phạm vi trong tài liệu này.

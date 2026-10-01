@@ -94,3 +94,11 @@ Module board/task đã lưu trên Supabase với phân quyền, lưu trữ/khôi
 ## Task chi tiết
 
 Xem [module task](docs/tasks.md) cho deep link, bình luận, lịch sử thay đổi và quá hạn. Cần migration `202609300003_task_details.sql` sau hai migration workspace/board. Bình luận và activity đã có; realtime vẫn chưa triển khai.
+
+Cập nhật 2026-10-01: collab Postgres Changes đã triển khai cho board/task và thảo luận; xem [tài liệu collab](docs/collab.md). Các ghi chú cũ về chưa có realtime được thay thế bởi phạm vi trong tài liệu này.
+
+Tổng kết phạm vi, bằng chứng và checklist nghiệm thu M3: [docs/mvp-summary.md](docs/mvp-summary.md).
+
+## Kiểm thử MVP local và Supabase
+
+Xem [báo cáo nghiệm thu, cấu hình tài khoản thử và lệnh E2E](docs/mvp-verification.md).

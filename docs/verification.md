@@ -1,5 +1,7 @@
 # Kết quả kiểm chứng — 2026-09-29
 
+> Báo cáo lịch sử cho starter M0. Các nhận xét “chưa triển khai” bên dưới chỉ đúng tại ngày kiểm tra; hiện trạng online ngày 2026-10-01 xem [tổng kết MVP](mvp-summary.md).
+
 - Production build (bao gồm vue-tsc): đạt.
 - Vitest: 7/7 test đạt, bao gồm chuyển cột theo cả hai thứ tự event, không mất/nhân đôi task, storage hỏng và quota lỗi.
 - Prettier: đạt.
