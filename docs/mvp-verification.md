@@ -73,6 +73,10 @@ Port 5180 dùng fixture local, 5190 dùng cloud. Kết quả ở `output/playwri
 - Email đăng ký/xác minh/reset thật và redirect từ inbox: chưa truy cập inbox, không đổi mật khẩu tài khoản người dùng. UI route/invalid link đã kiểm tra local; đăng nhập tài khoản verified đã kiểm tra cloud.
 - Lời mời hết hạn kiểm tra bằng SQL local; cloud đã thử link thu hồi/sai email và chấp nhận lặp.
 - Cảm ứng thiết bị thật và screen reader chưa thử; responsive Chromium không thay thế chúng.
-- Realtime bình luận mới đã có test logic và comment cloud RPC; chưa có assertion hai trình duyệt nhận comment mới trong suite cloud này.
+- Realtime comment đã được kiểm tra trong lượt bổ sung bên dưới.
 
 Không đánh dấu M3 hoàn tất toàn bộ khi các mục nghiệm thu trên còn mở. Không yêu cầu deployment/CI remote để chốt MVP local.
+
+## Bổ sung cloud comment — 2026-10-01
+
+Lượt kết thúc 08:47:58 UTC: suite cloud đạt, Member gửi qua UI và Owner/Viewer nhận không reload, Owner trả lời và Member nhận; không trùng, giữ draft/focus. Vòng kiểm tra nhận đầu tiên 956 ms. Workspace QA `9407f1d5-4d35-4aa7-8184-85d5b54b8ae2` đã archive board và gỡ membership thử. Accessibility tree có tên dialog, textbox và nội dung comment; Escape trả focus. Chưa kiểm tra lời đọc Narrator/NVDA. Kết quả này bổ sung, không thay thế mẫu benchmark phía trên. G0 ngày 2026-10-02 đối chiếu source và ghi lại bằng chứng lịch sử, không chạy lại test.

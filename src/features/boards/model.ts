@@ -30,17 +30,42 @@ export const taskInputSchema = z.object({
   assignee_id: z.string().uuid().nullable(),
   due_date: z.union([z.literal(''), z.iso.date()]),
 })
+export const labelSchema = z.object({
+  id: z.string().uuid(),
+  workspace_id: z.string().uuid(),
+  name: z.string(),
+  color: z.enum(['blue', 'green', 'amber', 'red', 'purple', 'slate']),
+})
+export const checklistSchema = z.object({
+  id: z.string().uuid(),
+  body: z.string(),
+  done: z.boolean(),
+  position: z.number().int(),
+  task_id: z.string().uuid(),
+})
 export const onlineTaskSchema = taskInputSchema.extend({
   due_date: z.string().nullable(),
   board_id: z.string().uuid(),
+  label_ids: z.array(z.string().uuid()).optional(),
+  checklist: z.array(checklistSchema).optional(),
   position: z.number().int(),
   archived_at: z.string().nullable(),
 })
 export const snapshotSchema = z.object({
+  workspace: z
+    .object({
+      id: z.string(),
+      name: z.string(),
+      timezone: z.string(),
+      archived_at: z.string().nullable(),
+      version: z.number(),
+    })
+    .optional(),
   board: onlineBoardSchema,
   role: z.enum(['owner', 'member', 'viewer']),
   tasks: z.array(onlineTaskSchema),
   members: z.array(memberSchema),
+  labels: z.array(labelSchema).optional(),
 })
 export type OnlineBoard = z.infer<typeof onlineBoardSchema>
 export type OnlineTask = z.infer<typeof onlineTaskSchema>
@@ -51,8 +76,18 @@ export function boardError(error: unknown) {
     return 'Dữ liệu không hợp lệ. Kiểm tra tên, hạn hoàn thành và người phụ trách.'
   const { code, message } = (error ?? {}) as { code?: string; message?: string }
   const messages: Record<string, string> = {
+    COMMENT_CONFLICT:
+      'Bình luận đã thay đổi. Bản nháp được giữ; tải bản mới để đối chiếu trước khi lưu.',
+    COMMENT_AUTHOR_REQUIRED: 'Bạn chỉ được sửa bình luận của mình.',
+    COMMENT_DELETED: 'Bình luận đã được xóa.',
+    REASON_REQUIRED: 'Nhập lý do xóa bình luận (tối đa 500 ký tự).',
+    INVALID_LABELS: 'Nhãn không hợp lệ, đã bị xóa hoặc vượt giới hạn 20 nhãn.',
+    LABEL_LIMIT: 'Workspace đã đạt giới hạn 100 nhãn.',
+    INVALID_TASK_SELECTION:
+      'Chọn từ 1 đến 50 công việc đang hoạt động trong cùng board.',
     BOARD_CONFLICT:
       'Board đã thay đổi. Đã tải bản mới; bản nháp của bạn được giữ lại. Hãy đối chiếu trước khi lưu lại.',
+    WORKSPACE_ARCHIVED: 'Workspace đã lưu trữ, chỉ có thể xem.',
     BOARD_ARCHIVED: 'Board đã lưu trữ, chỉ có thể xem.',
     TASK_ARCHIVED: 'Công việc đã được lưu trữ. Hãy tải lại board.',
     INVALID_ASSIGNEE: 'Người phụ trách không còn thuộc workspace.',

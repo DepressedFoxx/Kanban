@@ -10,10 +10,16 @@ import { useOnlineBoardStore } from '@/stores/onlineBoard'
 import { useAuthStore } from '@/stores/auth'
 import { useWorkspaceStore } from '@/stores/workspaces'
 import { workspaceConfig } from '@/features/workspaces/config'
+import { useWorkspaceSettingsStore } from '@/stores/workspaceSettings'
 const authView = () => import('@/features/auth/views/AuthView.vue')
 export const router = createRouter({
   history: createWebHistory(),
   routes: [
+    {
+      path: '/workspaces/:workspaceId/settings',
+      component: () => import('@/features/workspaces/views/SettingsView.vue'),
+      meta: { requiresAuth: true },
+    },
     {
       path: '/workspaces/:workspaceId/boards',
       component: () => import('@/features/boards/views/BoardsView.vue'),
@@ -96,6 +102,7 @@ export function installAuthGuards(pinia: Pinia) {
       useOnlineBoardStore(pinia).clear()
       useTaskThreadStore(pinia).clear()
       useWorkspaceStore(pinia).clear()
+      useWorkspaceSettingsStore(pinia).clear()
     },
     { flush: 'sync' },
   )

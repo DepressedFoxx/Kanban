@@ -3,7 +3,11 @@ import { createPinia, setActivePinia } from 'pinia'
 import { useTaskThreadStore } from '@/stores/taskThread'
 import { commentBodySchema, isOverdue, localDateKey, taskLink } from './model'
 import { safeRedirect, authRedirect } from '@/features/auth/navigation'
-const api = vi.hoisted(() => ({ thread: vi.fn(), comment: vi.fn() }))
+const api = vi.hoisted(() => ({
+  thread: vi.fn(),
+  comment: vi.fn(),
+  change: vi.fn(),
+}))
 vi.mock('./api', () => ({ tasksApi: api }))
 const board = '20000000-0000-4000-8000-000000000001',
   task = '30000000-0000-4000-8000-000000000001'
@@ -138,4 +142,40 @@ it('blocks offline comment retry without replacing its original receipt', async 
   } finally {
     vi.unstubAllGlobals()
   }
+})
+
+it('comment edit retry uses detached payload after losing response', async () => {
+  const store = useTaskThreadStore()
+  await store.load(board, task)
+  const change = {
+    comment: task,
+    version: 2,
+    action: 'edit' as const,
+    body: 'Saved body',
+    reason: null,
+  }
+  api.change
+    .mockRejectedValueOnce(new Error('lost response'))
+    .mockResolvedValueOnce({
+      ...empty(),
+      comments: [{ ...item(task), body: 'Saved body', version: 3 }],
+    })
+  expect(await store.change(board, task, change)).toBe(false)
+  change.body = 'New draft'
+  expect(await store.retry()).toBe(true)
+  expect(api.change.mock.calls[1]).toEqual(api.change.mock.calls[0])
+  expect(api.change.mock.calls[1]?.[3].body).toBe('Saved body')
+  expect(store.comments[0]?.body).toBe('Saved body')
+})
+it('latest refresh evicts old loaded comment pages to avoid retaining deleted text', async () => {
+  const store = useTaskThreadStore()
+  api.thread.mockResolvedValue({ ...empty(), comments: [item(task)] })
+  await store.load(board, task)
+  api.thread.mockResolvedValue({
+    ...empty(),
+    comments: [{ ...item(board), body: null, deleted_at: '2026-10-02' }],
+  })
+  await store.load(board, task, 'latest', true)
+  expect(store.comments).toHaveLength(1)
+  expect(store.comments[0]?.body).toBeNull()
 })

@@ -9,7 +9,25 @@ async function rpc(name: string, args: Record<string, unknown>) {
   if (error) throw error
   return threadSchema.parse(data)
 }
+export type CommentChange = {
+  comment: string
+  version: number
+  action: 'edit' | 'delete'
+  body: string | null
+  reason: string | null
+}
 export const tasksApi = {
+  change: (board: string, task: string, id: string, change: CommentChange) =>
+    rpc('task_comment_mutate', {
+      p_board: board,
+      p_task: task,
+      p_comment: change.comment,
+      p_version: change.version,
+      p_mutation: id,
+      p_action: change.action,
+      p_body: change.body,
+      p_reason: change.reason,
+    }),
   thread: (board: string, task: string, cursor: ThreadCursor = {}) =>
     rpc('task_thread', {
       p_board: board,

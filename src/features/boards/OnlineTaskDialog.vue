@@ -42,6 +42,7 @@ import {
   type OnlineTask,
   type TaskDraft,
 } from './model'
+import TaskExtras from '@/features/tasks/TaskExtras.vue'
 import TaskThread from '@/features/tasks/TaskThread.vue'
 import { useTaskThreadStore } from '@/stores/taskThread'
 import { taskLink } from '@/features/tasks/model'
@@ -54,9 +55,11 @@ const props = defineProps<{
 const emit = defineEmits<{ 'update:open': [value: boolean] }>()
 const thread = useTaskThreadStore()
 const copyNotice = ref('')
+const newId = () => crypto.randomUUID()
 const showLink = ref(false)
 const showDiscussion = ref(false)
 const commentDirty = ref(false)
+const extrasDirty = ref(false)
 const initialDraft = ref('')
 const confirmDiscard = ref(false)
 let resolveNavigation: ((value: boolean) => void) | undefined
@@ -70,7 +73,10 @@ const draftKey = () =>
     form.due_date,
   ])
 const dirty = computed(
-  () => draftKey() !== initialDraft.value || commentDirty.value,
+  () =>
+    draftKey() !== initialDraft.value ||
+    commentDirty.value ||
+    extrasDirty.value,
 )
 function requestClose(value = false) {
   if (
@@ -89,6 +95,7 @@ function decideDiscard(discard: boolean) {
   if (discard) {
     initialDraft.value = draftKey()
     commentDirty.value = false
+    extrasDirty.value = false
   }
   if (resolveNavigation) {
     resolveNavigation(discard)
@@ -255,6 +262,7 @@ watch(
       showLink.value = false
       showDiscussion.value = false
       commentDirty.value = false
+      extrasDirty.value = false
       initialDraft.value = draftKey()
     }
   },
@@ -263,10 +271,17 @@ watch(
 watch(
   () => store.lastSuccess,
   () => {
+    if (
+      props.open &&
+      !['save_task', 'archive_task'].includes(store.lastAction)
+    ) {
+      baseVersion.value = store.snapshot?.board.version ?? 0
+      return
+    }
     if (props.open) {
       initialDraft.value = draftKey()
       baseVersion.value = store.snapshot?.board.version ?? 0
-      if (!commentDirty.value) emit('update:open', false)
+      if (!commentDirty.value && !extrasDirty.value) emit('update:open', false)
     }
   },
 )
@@ -486,6 +501,7 @@ async function archive() {
             ><Button
               v-if="
                 store.snapshot?.role !== 'viewer' &&
+                !store.snapshot?.workspace?.archived_at &&
                 !store.snapshot?.board.archived_at &&
                 !taskArchived
               "
@@ -496,6 +512,23 @@ async function archive() {
           </div></DialogFooter
         >
       </form>
+      <TaskExtras
+        v-if="task && open"
+        :key="task.id"
+        :task="task.id"
+        :read-only="!canEdit"
+        @draft-change="extrasDirty = $event"
+      />
+      <Button
+        v-if="task && canEdit"
+        variant="outline"
+        class="mt-3"
+        :disabled="dirty || changed"
+        @click="
+          store.mutate('duplicate_task', { id: task.id, new_id: newId() })
+        "
+        >Nhân bản công việc đã lưu</Button
+      >
       <TaskThread
         v-if="task && open"
         v-show="showDiscussion"
@@ -505,6 +538,7 @@ async function archive() {
         :task="task.id"
         :read-only="
           store.snapshot?.role === 'viewer' ||
+          !!store.snapshot?.workspace?.archived_at ||
           !!store.snapshot?.board.archived_at ||
           taskArchived
         "

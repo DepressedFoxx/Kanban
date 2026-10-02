@@ -6,7 +6,7 @@ Phạm vi được xác nhận ngày 2026-10-01: frontend chạy dev local, dùn
 
 Ngày lập: 2026-09-29. Cập nhật: 2026-10-01. Phiên bản tài liệu: 0.4.
 
-**Hiện trạng 2026-10-01: Auth, workspace/thành viên, board/task, Collab và Sync đã có triển khai. Ma trận tại mục 4 mô tả quyền hiện có trong code. Đã kiểm tra cloud bằng tài khoản Owner và realtime trên hai tab cùng tài khoản; chưa nghiệm thu đầy đủ nhiều tài khoản khác vai trò hoặc M3.**
+**Đối chiếu 2026-10-02: các module MVP đã triển khai; cloud nhiều tài khoản, conflict/retry/reconnect, thu hồi quyền và comment realtime đã kiểm tra ngày 2026-10-01. Email và screen reader/cảm ứng thực tế còn mở. G0 v1 đã chốt đặc tả, G1 chưa triển khai.**
 
 Tài liệu này cụ thể hóa phạm vi phát triển và tiêu chí nghiệm thu. Mục 4 mô tả quyền MVP hiện tại; mục 9 phân biệt phần đã triển khai với phần đã kiểm chứng. Các mục tiêu chất lượng và kịch bản nghiệm thu chưa đạt vẫn là yêu cầu cần hoàn thành, không phải cam kết tính năng đã được nghiệm thu.
 
@@ -116,8 +116,8 @@ Các quyền dưới đây đã được thực thi trong RPC/RLS và có kiểm
 ### Mức độ kiểm chứng
 
 - Đã có test SQL local cho allow/deny, cách ly workspace, Viewer, người ngoài nhóm, thu hồi quyền và chống ghi trùng.
-- Cloud đã kiểm tra luồng Owner; realtime đã thử hai tab cùng tài khoản.
-- **Chưa nghiệm thu cloud đầy đủ bằng các tài khoản Owner/Member/Viewer riêng biệt**, bao gồm thay đổi vai trò, thu hồi quyền khi đang mở board và subscription sau thu hồi. Các kịch bản tại mục 10 vẫn cần hoàn thành trước khi công nhận M3.
+- Cloud đã kiểm tra Owner/Member/Viewer và người ngoài trước khi mời, realtime nhiều phiên.
+- Cloud đã kiểm tra đổi role/gỡ quyền/subscription sau thu hồi. Xem báo cáo MVP cho phạm vi bằng chứng và các kịch bản thủ công còn thiếu.
 
 ## 5. Màn hình và trạng thái hiện tại
 
@@ -165,9 +165,11 @@ Các quy tắc đã triển khai:
 - Realtime chỉ báo cần tải lại; snapshot/thread RPC là nguồn dữ liệu chính. Giữ bản nháp khi nhận snapshot; response cũ sau cleanup không phục hồi state.
 - Dữ liệu local không tự import online. Không lưu hàng đợi offline hoặc bản nháp qua reload.
 
-Source schema: [migrations](../supabase/migrations). Migration 001–004 đã áp dụng theo các lượt thiết lập trước; migration realtime `20261001013707_collab_realtime.sql` đã áp dụng cloud ngày 2026-10-01. File migration realtime hiện còn chưa commit cùng thay đổi Collab/Sync. Test SQL local không thay thế kiểm thử cạnh tranh bằng nhiều connection/cloud.
+Source schema: [migrations](../supabase/migrations). Migration 001–004 đã áp dụng theo các lượt thiết lập trước; migration realtime `20261001013707_collab_realtime.sql` đã áp dụng cloud ngày 2026-10-01. Migration realtime và PT409 đã được commit cùng các thay đổi Collab/Sync liên quan. Test SQL local không thay thế kiểm thử cạnh tranh bằng nhiều connection/cloud.
 
 ## 7. Yêu cầu chất lượng và mức độ kiểm chứng
+
+Bảng sau giữ lịch sử yêu cầu và bằng chứng tại lượt Sync ban đầu; các công việc ghi “còn phải hoàn thành” đã được thực hiện một phần trong lượt cloud sau đó. Trạng thái hiện tại theo mvp-summary.md và mvp-verification.md, không dùng bảng lịch sử để kết luận thiếu E2E/phân quyền cloud.
 
 Giữ nguyên các tiêu chí nghiệm thu; không hạ tiêu chí để đánh dấu hoàn thành.
 
@@ -177,7 +179,7 @@ Giữ nguyên các tiêu chí nghiệm thu; không hạ tiêu chí để đánh 
 | Label, focus, bàn phím/Escape, giải thích hành động bị chặn     | Có component truy cập được bằng bàn phím và test bảo vệ dialog; Sync đã kiểm tra mở/đóng task bằng bàn phím | Audit nhất quán các form, lỗi và focus ở toàn bộ luồng; chưa có báo cáo accessibility toàn app                                               |
 | Không báo lưu giả, giữ draft, phân biệt loading/empty/error     | Test UI/store và Sync; timeout, retry, stale response, offline, conflict                                    | Kiểm thử mất phản hồi sau server commit và reconnect trên cloud, không chỉ mock                                                              |
 | Authorization độc lập UI, cách ly workspace, comment text thuần | SQL local allow/deny/RLS; test comment không render HTML; frontend dùng publishable key                     | Nghiệm thu cloud Owner/Member/Viewer/người ngoài, request trực tiếp và subscription sau thu hồi; kiểm tra bundle build local không có secret |
-| 100 task/board, 5 phiên, event tới phiên khác trong 2 giây      | Chưa benchmark; thử realtime hai tab cùng tài khoản không phải kết quả đo tải                               | Tạo dataset thử riêng, ghi môi trường/mạng, số lần thử và độ trễ từ commit đến UI; xác nhận không mất/trùng task                             |
+| 100 task/board, 5 phiên, event tới phiên khác trong 2 giây      | Đã benchmark 100 task/5 phiên; mẫu và giới hạn tại mvp-verification.md                                      | Tạo dataset thử riêng, ghi môi trường/mạng, số lần thử và độ trễ từ commit đến UI; xác nhận không mất/trùng task                             |
 | Migration có trong Git, dữ liệu kiểm thử tách biệt              | Có migration và fixture SQL local; không tự import board local                                              | Commit thay đổi mới; chuẩn bị seed/reset an toàn cho E2E/staging; cloud QA hiện không chứng minh đã có môi trường staging riêng              |
 | Format, typecheck, test, build, CI và E2E                       | Lượt Sync ngày 2026-10-01: 124 test/13 file đạt, build/typecheck/format đạt; có workflow CI                 | Đã có suite E2E local và cloud; GitHub CI chưa xác minh nhưng không chặn MVP local                                                           |
 | Môi trường dev local                                            | Có hướng dẫn cấu hình và migration                                                                          | Nghiệm thu env, auth redirect về localhost, refresh/deep link và logout trên dev server; không yêu cầu deployment                            |
@@ -211,7 +213,7 @@ Trước khi vận hành production cần quyết định và kiểm chứng bac
 - Board cá nhân cũ: localStorage tại `/personal-board`, giữ nguyên dữ liệu cũ; không tự import online.
 - Cộng tác: đã có bình luận và lịch sử task qua migration 003; xem [module task](tasks.md). Đã có realtime kèm kiểm tra định kỳ dự phòng; xem [Collab](collab.md). Chưa nghiệm thu M3.
 - Sync: deadline 15 giây, retry giữ nguyên receipt/payload, trạng thái xác nhận và bảo vệ điều hướng trong phiên; xem [Sync](sync.md). Không có hàng đợi ghi offline hoặc lưu bản nháp qua reload.
-- Kiểm thử tại lần triển khai Sync ngày 2026-10-01: 124 test local đạt; build/typecheck đạt. Cloud Owner đã kiểm tra các thao tác board/task chính và realtime hai tab cùng tài khoản. Không đồng nghĩa nghiệm thu concurrent writes nhiều connection hoặc nhiều tài khoản; lỗi mạng/timeout mới kiểm thử bằng mock có kiểm soát.
+- Lượt cuối ngày 2026-10-01: 125 tests/13 files, 10 E2E local; cloud nhiều tài khoản, cạnh tranh ghi/reorder, mất phản hồi sau commit, reconnect và comment UI đạt. Không thay thế email inbox, screen reader hoặc cảm ứng thật.
 
 ## 10. Kịch bản nghiệm thu MVP
 
@@ -240,3 +242,7 @@ Chỉ đánh dấu MVP hoàn thành sau khi các nhóm yêu cầu MVP và kịch
 - [Sync](sync.md): lưu an toàn, retry và giới hạn trong phiên.
 
 - [Tổng kết MVP và checklist chốt M3](mvp-summary.md): trạng thái, bằng chứng và phần còn thiếu.
+
+## 12. Đặc tả mở rộng v1
+
+[product-v1-spec.md](product-v1-spec.md) chốt quyền, timezone, vòng đời, file/export và hợp đồng G1. Quyền MVP ở mục 4 vẫn mô tả code hiện có; các quyền v1 mới chỉ có hiệu lực sau triển khai/migration.

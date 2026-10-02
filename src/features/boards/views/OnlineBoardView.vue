@@ -22,6 +22,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import TaskCard from '@/components/board/TaskCard.vue'
+import LabelManager from '@/features/tasks/LabelManager.vue'
+import BulkTasks from '@/features/tasks/BulkTasks.vue'
 import OnlineTaskDialog from '../OnlineTaskDialog.vue'
 import {
   columns,
@@ -50,6 +52,11 @@ const open = ref(false),
 
 const { online, label: collabLabel } = useCollab(
   () => [
+    {
+      table: 'workspaces',
+      event: 'UPDATE',
+      filter: `id=eq.${store.snapshot?.board.workspace_id}`,
+    },
     { table: 'boards', event: 'UPDATE', filter: `id=eq.${id}` },
     {
       table: 'workspace_members',
@@ -291,7 +298,20 @@ onBeforeUnmount(() => {
             : 'Vai trò Viewer: bạn chỉ có quyền xem.'
         }}
       </p>
-      <details v-if="store.snapshot.role === 'owner'" class="board-options">
+      <p
+        v-if="store.snapshot.workspace?.archived_at"
+        role="status"
+        class="mt-4 rounded-lg border p-4"
+      >
+        Workspace đã lưu trữ, nội dung chỉ đọc.
+      </p>
+      <details
+        v-if="
+          store.snapshot.role === 'owner' &&
+          !store.snapshot.workspace?.archived_at
+        "
+        class="board-options"
+      >
         <summary>Tuỳ chọn board</summary>
         <form
           v-if="store.snapshot.role === 'owner'"
@@ -424,6 +444,8 @@ onBeforeUnmount(() => {
           Đang lọc: kéo thả tạm tắt. Bạn vẫn có thể đổi trạng thái qua
           menu.<Button variant="link" @click="clearFilters">Xóa bộ lọc</Button>
         </p>
+        <LabelManager />
+        <BulkTasks />
         <div class="board-grid">
           <section
             v-for="column in columns"
@@ -457,6 +479,17 @@ onBeforeUnmount(() => {
               @change="dragged(column.id, $event)"
               ><template #item="{ element }"
                 ><TaskCard
+                  :timezone="store.snapshot.workspace?.timezone"
+                  :archived="
+                    !!store.snapshot.workspace?.archived_at ||
+                    !!store.snapshot.board.archived_at
+                  "
+                  :labels="
+                    (store.snapshot.labels ?? []).filter((l) =>
+                      element.label_ids?.includes(l.id),
+                    )
+                  "
+                  :checklist="element.checklist"
                   :task="displayTask(element)"
                   :drag-disabled="!canWrite || filtered"
                   :read-only="!canWrite"

@@ -11,7 +11,7 @@ export function safeRedirect(value: unknown): string {
     '/personal-board',
   ]
   const workspacePath =
-    /^\/workspaces\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\/(members|boards)$/i
+    /^\/workspaces\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\/(members|boards|settings)$/i
   const uuid = '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}'
   const taskPath = new RegExp(`^/boards/${uuid}\\?task=${uuid}$`, 'i')
   const invitationPath = /^\/invite\/[a-f0-9]{64}$/

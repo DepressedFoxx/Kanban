@@ -5,7 +5,7 @@ import {
   isDefinitiveFailure,
 } from '@/features/sync/request'
 import { defineStore } from 'pinia'
-import { tasksApi } from '@/features/tasks/api'
+import { tasksApi, type CommentChange } from '@/features/tasks/api'
 import {
   commentBodySchema,
   taskConfig,
@@ -31,6 +31,7 @@ export const useTaskThreadStore = defineStore('task-thread', () => {
     task: string
     id: string
     body: string
+    change?: CommentChange
   } | null>(null)
   const lastSyncedAt = ref('')
   let generation = 0,
@@ -133,6 +134,11 @@ export const useTaskThreadStore = defineStore('task-thread', () => {
       if (mode !== 'activity') {
         if (mode === 'comments' || !comments.value.length)
           moreComments.value = result.comments.length === taskConfig.pageSize
+        // Refresh drops older pages so edited/deleted comments cannot linger as stale text.
+        if (mode === 'latest') {
+          comments.value = []
+          moreComments.value = result.comments.length === taskConfig.pageSize
+        }
         mergeComments(result.comments, mode === 'latest')
       }
       if (mode !== 'comments') {
@@ -156,19 +162,31 @@ export const useTaskThreadStore = defineStore('task-thread', () => {
     task: string
     id: string
     body: string
+    change?: CommentChange
   }) {
     const request = ++generation
     refreshing.value = false
     pending.value = true
     error.value = ''
     try {
-      const result = await tasksApi.comment(
-        attempt.board,
-        attempt.task,
-        attempt.id,
-        attempt.body,
-      )
+      const result = attempt.change
+        ? await tasksApi.change(
+            attempt.board,
+            attempt.task,
+            attempt.id,
+            attempt.change,
+          )
+        : await tasksApi.comment(
+            attempt.board,
+            attempt.task,
+            attempt.id,
+            attempt.body,
+          )
       if (request !== generation) return false
+      if (attempt.change) {
+        comments.value = []
+        moreComments.value = result.comments.length === taskConfig.pageSize
+      }
       mergeComments(result.comments)
       mergeActivity(result.activity)
       canComment.value = result.can_comment
@@ -216,6 +234,27 @@ export const useTaskThreadStore = defineStore('task-thread', () => {
       return false
     }
   }
+  async function change(board: string, task: string, change: CommentChange) {
+    if (
+      pending.value ||
+      loading.value ||
+      uncertain.value ||
+      !canComment.value ||
+      scope !== board + ':' + task
+    )
+      return false
+    if (isOffline()) {
+      error.value = 'Đang offline. Kết nối lại trước khi lưu.'
+      return false
+    }
+    return send({
+      board,
+      task,
+      id: crypto.randomUUID(),
+      body: '',
+      change: JSON.parse(JSON.stringify(change)),
+    })
+  }
   async function retry() {
     if (!uncertain.value || pending.value) return false
     if (isOffline()) {
@@ -242,6 +281,7 @@ export const useTaskThreadStore = defineStore('task-thread', () => {
     clear,
     load,
     comment,
+    change,
     retry,
   }
 })

@@ -39,7 +39,13 @@ async function refresh() {
   }
 }
 async function create() {
-  if (pending.value || loading.value || !workspace.owner) return
+  if (
+    pending.value ||
+    loading.value ||
+    !workspace.owner ||
+    workspace.current?.archived_at
+  )
+    return
   pending.value = true
   error.value = ''
   attempt.value ??= { id: crypto.randomUUID(), name: name.value.trim() }
@@ -71,6 +77,14 @@ onBeforeUnmount(() => {
     <RouterLink to="/workspaces" class="text-sm text-primary"
       >← Đổi workspace</RouterLink
     >
+    <p v-if="workspace.current?.archived_at" role="status" class="mt-4">
+      Workspace đã lưu trữ — chỉ đọc.
+    </p>
+    <Button as-child variant="outline" class="mt-3"
+      ><RouterLink :to="`/workspaces/${id}/settings`"
+        >Cài đặt workspace</RouterLink
+      ></Button
+    >
     <PageHeader :title="'Board · ' + (workspace.current?.name || 'Workspace')">
       <Button as-child variant="outline"
         ><RouterLink :to="`/workspaces/${id}/members`"
@@ -88,7 +102,7 @@ onBeforeUnmount(() => {
       {{ error || workspace.error }}
     </p>
     <form
-      v-if="workspace.owner"
+      v-if="workspace.owner && !workspace.current?.archived_at"
       class="mt-6 flex flex-wrap items-end gap-3 rounded-xl border bg-card p-5"
       @submit.prevent="create"
     >

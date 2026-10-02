@@ -9,6 +9,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
 import { isOverdue } from '@/features/tasks/model'
+import { labelClasses } from '@/features/tasks/productivity'
 import { CalendarDays, GripVertical } from '@lucide/vue'
 import {
   columns,
@@ -21,6 +22,10 @@ const props = defineProps<{
   task: Task
   dragDisabled: boolean
   readOnly?: boolean
+  timezone?: string
+  archived?: boolean
+  labels?: { id: string; name: string; color: string }[]
+  checklist?: { done: boolean }[]
 }>()
 const now = ref(new Date())
 let dateTimer: ReturnType<typeof setInterval> | undefined
@@ -31,7 +36,13 @@ onMounted(() => {
 })
 onBeforeUnmount(() => clearInterval(dateTimer))
 const overdue = computed(() =>
-  isOverdue(props.task.dueDate, props.task.status, now.value),
+  isOverdue(
+    props.task.dueDate,
+    props.task.status,
+    now.value,
+    props.timezone,
+    props.archived,
+  ),
 )
 const emit = defineEmits<{
   edit: [task: Task]
@@ -41,6 +52,20 @@ const emit = defineEmits<{
 
 <template>
   <article class="task-card">
+    <div v-if="labels?.length" class="mb-2 flex flex-wrap gap-1">
+      <span
+        v-for="label in labels"
+        :key="label.id"
+        class="rounded px-2 py-1 text-xs"
+        :class="labelClasses[label.color]"
+        >{{ label.name }}</span
+      >
+    </div>
+    <p v-if="checklist?.length" class="mb-2 text-xs text-muted-foreground">
+      Checklist {{ checklist.filter((i) => i.done).length }}/{{
+        checklist.length
+      }}
+    </p>
     <div class="mb-3 flex items-center justify-between gap-2">
       <span class="priority" :data-priority="task.priority">{{
         priorityLabels[task.priority]

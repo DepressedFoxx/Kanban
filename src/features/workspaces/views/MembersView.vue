@@ -128,6 +128,15 @@ async function revoke(invitation: string) {
 </script>
 <template>
   <main class="workspace-page">
+    <Button as-child variant="outline"
+      ><RouterLink :to="`/workspaces/${id}/settings`"
+        >Cài đặt workspace</RouterLink
+      ></Button
+    >
+    <p v-if="store.current?.archived_at" role="status" class="mt-4">
+      Workspace đã lưu trữ. Không thể mời hoặc đổi vai trò; Owner vẫn có thể gỡ
+      thành viên và thu hồi lời mời.
+    </p>
     <Button as-child variant="outline" class="mb-4 mr-4"
       ><RouterLink :to="`/workspaces/${id}/boards`"
         >Board của workspace</RouterLink
@@ -165,7 +174,7 @@ async function revoke(invitation: string) {
         quản lý thành viên và lời mời.
       </p>
       <form
-        v-if="store.owner"
+        v-if="store.owner && !store.current?.archived_at"
         class="mt-6 flex flex-wrap items-end gap-3 rounded-xl border bg-card p-5"
         @submit.prevent="rename"
       >
@@ -204,7 +213,7 @@ async function revoke(invitation: string) {
               <template v-if="store.owner && member.role !== 'owner'"
                 ><Select
                   :model-value="member.role"
-                  :disabled="store.pending"
+                  :disabled="store.pending || !!store.current?.archived_at"
                   @update:model-value="changeRole(member.user_id, $event)"
                   ><SelectTrigger
                     class="w-32"
@@ -243,6 +252,7 @@ async function revoke(invitation: string) {
         </p>
         <form
           class="mt-4 grid gap-3 sm:grid-cols-[1fr_140px_auto] sm:items-end"
+          v-if="!store.current?.archived_at"
           @submit.prevent="invite"
         >
           <div class="field">

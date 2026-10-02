@@ -24,6 +24,7 @@ export const useOnlineBoardStore = defineStore('online-board', () => {
   const syncError = ref('')
   const uncertain = ref<Mutation | null>(null)
   const lastSuccess = ref('')
+  const lastAction = ref('')
   const lastSyncedAt = ref('')
   let generation = 0
   const writable = computed(() =>
@@ -31,6 +32,7 @@ export const useOnlineBoardStore = defineStore('online-board', () => {
       snapshot.value &&
       snapshot.value.role !== 'viewer' &&
       !snapshot.value.board.archived_at &&
+      !snapshot.value.workspace?.archived_at &&
       !loading.value &&
       !pending.value &&
       !uncertain.value,
@@ -47,6 +49,7 @@ export const useOnlineBoardStore = defineStore('online-board', () => {
     error.value = ''
     notice.value = ''
     lastSuccess.value = ''
+    lastAction.value = ''
     lastSyncedAt.value = ''
   }
   async function load(id: string, options: { background?: boolean } = {}) {
@@ -112,6 +115,7 @@ export const useOnlineBoardStore = defineStore('online-board', () => {
       uncertain.value = null
       syncError.value = ''
       lastSyncedAt.value = new Date().toISOString()
+      lastAction.value = mutation.action
       lastSuccess.value = mutation.id
       notice.value = 'Đã lưu.'
       return true
@@ -183,6 +187,7 @@ export const useOnlineBoardStore = defineStore('online-board', () => {
     notice,
     uncertain,
     lastSuccess,
+    lastAction,
     lastSyncedAt,
     writable,
     clear,

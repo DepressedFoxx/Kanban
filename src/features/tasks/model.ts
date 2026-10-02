@@ -18,7 +18,10 @@ const author = {
 export const commentSchema = z.object({
   ...author,
   id: z.string().uuid(),
-  body: z.string(),
+  body: z.string().nullable(),
+  version: z.number().int().optional(),
+  edited_at: z.string().nullable().optional(),
+  deleted_at: z.string().nullable().optional(),
 })
 export const activitySchema = z.object({
   ...author,
@@ -57,8 +60,27 @@ export function isOverdue(
   dueDate: string | null | undefined,
   status: string,
   now = new Date(),
+  timezone?: string,
+  archived = false,
 ) {
-  return Boolean(dueDate && status !== 'done' && dueDate < localDateKey(now))
+  let today = localDateKey(now)
+  if (timezone) {
+    try {
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).formatToParts(now)
+      const part = (type: string) => parts.find((p) => p.type === type)?.value
+      today = `${part('year')}-${part('month')}-${part('day')}`
+    } catch {
+      // Older browsers may not know a timezone present in PostgreSQL's newer tzdata.
+      // Do not crash the board or display a misleading overdue badge.
+      return false
+    }
+  }
+  return Boolean(!archived && dueDate && status !== 'done' && dueDate < today)
 }
 export function taskLink(board: string, task: string) {
   return `/boards/${board}?task=${task}`

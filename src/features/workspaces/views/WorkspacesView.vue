@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import PageHeader from '@/components/PageHeader.vue'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,6 +11,10 @@ import { workspaceConfig, roleLabels } from '../config'
 const store = useWorkspaceStore()
 const router = useRouter()
 const name = ref('')
+const archived = ref(false)
+const shown = computed(() =>
+  store.workspaces.filter((w) => Boolean(w.archived_at) === archived.value),
+)
 onMounted(() => store.load())
 async function create() {
   const result = await store.mutate(() => workspaceApi.create(name.value))
@@ -67,9 +71,15 @@ async function create() {
     >
       Bạn chưa tham gia workspace nào. Tạo workspace hoặc mở link lời mời.
     </p>
-    <div v-else class="mt-6 grid gap-4 sm:grid-cols-2">
+    <Button variant="outline" class="mt-4" @click="archived = !archived">{{
+      archived ? 'Xem workspace hoạt động' : 'Xem workspace đã lưu trữ'
+    }}</Button>
+    <p v-if="!store.loading && !shown.length" class="mt-3 text-sm">
+      Không có workspace trong nhóm này.
+    </p>
+    <div class="mt-6 grid gap-4 sm:grid-cols-2">
       <RouterLink
-        v-for="workspace in store.workspaces"
+        v-for="workspace in shown"
         :key="workspace.id"
         :to="`/workspaces/${workspace.id}/boards`"
         class="min-w-0 rounded-xl border bg-card p-5 transition-colors hover:bg-accent"

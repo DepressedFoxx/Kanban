@@ -13,6 +13,10 @@ export const workspaceSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
   role: z.enum(['owner', 'member', 'viewer']),
+  description: z.string().optional(),
+  timezone: z.string().optional(),
+  archived_at: z.string().nullable().optional(),
+  version: z.number().int().optional(),
   created_at: z.string(),
 })
 export const memberSchema = z.object({
@@ -44,6 +48,14 @@ export function workspaceError(error: unknown) {
     return error.issues[0]?.message ?? 'Dữ liệu không hợp lệ.'
   const { code, message } = (error ?? {}) as { code?: string; message?: string }
   const messages: Record<string, string> = {
+    WORKSPACE_CONFLICT:
+      'Workspace đã thay đổi. Bản nháp vẫn được giữ; hãy đối chiếu bản mới.',
+    WORKSPACE_ARCHIVED: 'Workspace đã lưu trữ, chỉ có thể xem.',
+    OWNER_MUST_TRANSFER: 'Hãy chuyển Owner trước khi rời workspace.',
+    INVALID_OWNER_TARGET:
+      'Thành viên được chọn không còn đủ điều kiện làm Owner.',
+    WORKSPACE_ACTIVE: 'Workspace đang hoạt động.',
+    INVALID_INPUT: 'Kiểm tra tên, mô tả và múi giờ IANA hợp lệ.',
     OWNER_REQUIRED: 'Chỉ Owner được thực hiện thao tác này.',
     VERIFIED_ACCOUNT_REQUIRED:
       'Bạn cần đăng nhập bằng tài khoản đã xác minh email.',
@@ -59,5 +71,7 @@ export function workspaceError(error: unknown) {
   if (code === 'PGRST202' || code === '42P01')
     return 'Dịch vụ workspace chưa được thiết lập. Vui lòng liên hệ người quản lý ứng dụng.'
   if (code === '42501') return 'Bạn không có quyền thực hiện thao tác này.'
+  if (code?.startsWith('22') || code?.startsWith('23'))
+    return 'Dữ liệu không hợp lệ. Kiểm tra tên, mô tả và lựa chọn rồi thử lại.'
   return 'Không kết nối được workspace. Kiểm tra kết nối rồi thử tải lại trước khi gửi lại thao tác.'
 }
