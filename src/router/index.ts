@@ -11,10 +11,16 @@ import { useAuthStore } from '@/stores/auth'
 import { useWorkspaceStore } from '@/stores/workspaces'
 import { workspaceConfig } from '@/features/workspaces/config'
 import { useWorkspaceSettingsStore } from '@/stores/workspaceSettings'
+import { useMyTasksStore } from '@/stores/myTasks'
 const authView = () => import('@/features/auth/views/AuthView.vue')
 export const router = createRouter({
   history: createWebHistory(),
   routes: [
+    {
+      path: '/my-tasks',
+      component: () => import('@/features/my-tasks/MyTasksView.vue'),
+      meta: { requiresAuth: true },
+    },
     {
       path: '/workspaces/:workspaceId/settings',
       component: () => import('@/features/workspaces/views/SettingsView.vue'),
@@ -103,6 +109,7 @@ export function installAuthGuards(pinia: Pinia) {
       useTaskThreadStore(pinia).clear()
       useWorkspaceStore(pinia).clear()
       useWorkspaceSettingsStore(pinia).clear()
+      useMyTasksStore(pinia).clear()
     },
     { flush: 'sync' },
   )

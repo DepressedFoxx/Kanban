@@ -1,9 +1,33 @@
 import { appConfig } from '@/config/app'
 import { authConfig } from './config'
 import { workspaceConfig } from '@/features/workspaces/config'
+import { isMyTasksPath } from '@/features/my-tasks/model'
 // Explicit allowlist prevents external redirects and auth redirect loops.
 export function safeRedirect(value: unknown): string {
   if (typeof value !== 'string') return appConfig.routes.board
+  if (isMyTasksPath(value)) return value
+  if (value.startsWith('/boards/') && value.includes('returnTo=')) {
+    try {
+      const url = new URL(value, 'http://local'),
+        task = url.searchParams.get('task')
+      const uuid =
+        /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i
+      const keys = [...url.searchParams.keys()]
+      if (
+        url.origin === 'http://local' &&
+        !url.hash &&
+        uuid.test(url.pathname.slice(8)) &&
+        (task === null || uuid.test(task)) &&
+        keys.length === (task === null ? 1 : 2) &&
+        new Set(keys).size === keys.length &&
+        keys.includes('returnTo') &&
+        isMyTasksPath(url.searchParams.get('returnTo'))
+      )
+        return value
+    } catch {
+      /* Fall through to the existing path allowlist. */
+    }
+  }
   const paths: string[] = [
     appConfig.routes.board,
     authConfig.routes.account,

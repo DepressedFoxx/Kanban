@@ -67,6 +67,7 @@ watch(
   { immediate: true },
 )
 const workspaceLabel = computed(() => {
+  if (route.path === '/my-tasks') return 'Công việc của tôi'
   const id = String(
     route.params.workspaceId || onlineBoard.snapshot?.board.workspace_id || '',
   )

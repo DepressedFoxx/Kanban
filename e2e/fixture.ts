@@ -195,7 +195,11 @@ export class Harness {
       }
       try {
         const result = await this.rpc(actor, name, args)
-        if (name === 'board_mutate' && this.loseNextWrite) {
+        if (
+          (name === 'board_mutate' ||
+            name === 'task_saved_filter_mutate') &&
+          this.loseNextWrite
+        ) {
           this.loseNextWrite = false
           return route.abort('connectionreset') // SQL committed; response deliberately lost
         }

@@ -34,6 +34,7 @@ import {
 import { appConfig } from '@/config/app'
 import { boardConfig, type OnlineTask } from '../model'
 import { useOnlineBoardStore } from '@/stores/onlineBoard'
+import { isMyTasksPath } from '@/features/my-tasks/model'
 const router = useRouter()
 const taskLinkError = ref('')
 const route = useRoute(),
@@ -111,17 +112,27 @@ function displayTask(task: OnlineTask) {
   }
 }
 async function add(status: Status = 'todo') {
-  if (route.query.task) await router.replace({ query: {} })
+  if (route.query.task)
+    await router.replace({
+      query: isMyTasksPath(route.query.returnTo)
+        ? { returnTo: route.query.returnTo }
+        : {},
+    })
   selected.value = null
   initial.value = status
   open.value = true
 }
 function edit(task: OnlineTask) {
-  void router.replace({ query: { task: task.id } })
+  void router.replace({ query: { ...route.query, task: task.id } })
 }
 function setDialogOpen(value: boolean) {
   open.value = value
-  if (!value && route.query.task) void router.replace({ query: {} })
+  if (!value && route.query.task)
+    void router.replace({
+      query: isMyTasksPath(route.query.returnTo)
+        ? { returnTo: route.query.returnTo }
+        : {},
+    })
 }
 watch(
   [() => route.query.task, () => store.snapshot?.board.id],
@@ -228,6 +239,12 @@ onBeforeUnmount(() => {
 </script>
 <template>
   <main class="workspace-page">
+    <RouterLink
+      v-if="isMyTasksPath(route.query.returnTo)"
+      :to="String(route.query.returnTo)"
+      class="mb-3 block text-sm text-primary"
+      >← Công việc của tôi</RouterLink
+    >
     <RouterLink
       :to="
         store.snapshot

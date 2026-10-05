@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { RouterLink, useRoute } from 'vue-router'
-import { BookOpen, LayoutDashboard, UserRound } from '@lucide/vue'
+import {
+  BookOpen,
+  LayoutDashboard,
+  UserRound,
+  ListTodo,
+} from '@lucide/vue'
 import { appConfig } from '@/config/app'
 import { authConfig } from '@/features/auth/config'
 import { workspaceConfig } from '@/features/workspaces/config'
@@ -11,6 +16,14 @@ const emit = defineEmits<{ navigate: [] }>()
 </script>
 <template>
   <nav class="flex flex-col gap-2" aria-label="Điều hướng chính">
+    <RouterLink
+      v-if="auth.authenticated"
+      to="/my-tasks"
+      class="nav-link"
+      @click="emit('navigate')"
+      ><ListTodo :size="17" class="shrink-0" aria-hidden="true" />Công việc của
+      tôi</RouterLink
+    >
     <RouterLink
       v-if="auth.authenticated"
       :to="workspaceConfig.listPath"
