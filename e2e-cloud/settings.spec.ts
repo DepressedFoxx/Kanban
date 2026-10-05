@@ -87,11 +87,32 @@ test('G1 cloud: settings conflict, archive realtime, ownership transfer and leav
       await call(role, 'workspace_invitation_accept', { p_token: token })
     }
     board = randomUUID()
-    await call('owner', 'board_create', {
+    await call('member', 'board_create', {
       p_workspace: workspace,
       p_id: board,
       p_name: 'QA G1 board',
     })
+    expect(
+      await call('member', 'board_create', {
+        p_workspace: workspace,
+        p_id: board,
+        p_name: 'QA G1 board',
+      }),
+    ).toBe(board)
+    const viewerCreate = await clients.viewer!.rpc('board_create', {
+      p_workspace: workspace,
+      p_id: randomUUID(),
+      p_name: 'Denied viewer board',
+    })
+    expect(viewerCreate.error?.code).toBe('42501')
+    const memberBoards = await open('member', `/workspaces/${workspace}/boards`)
+    await expect(
+      memberBoards.getByLabel('Tên board mới', { exact: true }),
+    ).toBeVisible()
+    await memberBoards.close()
+    checks.push(
+      'G6 Member can create/retry board and sees creation form; Viewer RPC denied',
+    )
     const task = randomUUID()
     await call('member', 'board_mutate', {
       p_board: board,
@@ -152,7 +173,29 @@ test('G1 cloud: settings conflict, archive realtime, ownership transfer and leav
     checks.push(
       'Settings UI save, role denial and two connections conflict safely',
     )
-    await mutation('owner', 'archive')
+    const beforeArchive = await snapshot()
+    const archiveRace = await Promise.all([
+      clients.owner!.rpc('workspace_mutate', {
+        p_workspace: workspace,
+        p_version: beforeArchive.version,
+        p_mutation: randomUUID(),
+        p_action: 'archive',
+        p_data: {},
+      }),
+      clients.member!.rpc('task_comment_add', {
+        p_board: board,
+        p_task: task,
+        p_id: randomUUID(),
+        p_body: 'G6 archive race',
+      }),
+    ])
+    expect(archiveRace[0]!.error).toBeNull()
+    if (archiveRace[1]!.error)
+      expect(archiveRace[1]!.error.message).toBe('WORKSPACE_ARCHIVED')
+    expect((await snapshot()).archived_at).toBeTruthy()
+    checks.push(
+      'G6 archive-vs-comment race serialized; post-archive write denied below',
+    )
     await expect(
       memberPage.getByText('Workspace đã lưu trữ, nội dung chỉ đọc.', {
         exact: true,

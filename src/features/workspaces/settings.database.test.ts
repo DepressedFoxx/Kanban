@@ -69,6 +69,27 @@ beforeAll(async () => {
 afterAll(async () => {
   await db?.close()
 })
+it('G6 member board creation respects retry, role downgrade and archive', async () => {
+  const w = await setup(),
+    board = randomUUID()
+  expect(await rpc(member, 'board_create', [w, board, 'Member board'])).toBe(
+    board,
+  )
+  expect(await rpc(member, 'board_create', [w, board, 'Member board'])).toBe(
+    board,
+  )
+  await expect(
+    rpc(viewer, 'board_create', [w, randomUUID(), 'Denied']),
+  ).rejects.toThrow('WORKSPACE_WRITE_DENIED')
+  await rpc(owner, 'workspace_member_change', [w, member, 'viewer'])
+  await expect(
+    rpc(member, 'board_create', [w, board, 'Member board']),
+  ).rejects.toThrow('WORKSPACE_WRITE_DENIED')
+  await mutate(w, 'archive')
+  await expect(
+    rpc(owner, 'board_create', [w, randomUUID(), 'Archived']),
+  ).rejects.toThrow('WORKSPACE_ARCHIVED')
+})
 it('settings validate role/timezone, version and receipt', async () => {
   const w = await setup(),
     s = await rpc(owner, 'workspace_settings_get', [w]),
@@ -215,6 +236,25 @@ it('archive blocks legacy writes, revokes invitations, keeps reads and restore s
   ).rejects.toThrow()
   expect((await rpc(member, 'task_thread', [board, task])).can_comment).toBe(
     true,
+  )
+})
+it('G6 restoring workspace keeps a previously archived board archived', async () => {
+  const w = await setup(),
+    board = randomUUID()
+  await rpc(owner, 'board_create', [w, board, 'Already archived'])
+  await rpc(owner, 'board_mutate', [
+    board,
+    1,
+    randomUUID(),
+    'archive_board',
+    {},
+  ])
+  const archivedAt = (await rpc(owner, 'board_snapshot', [board])).board
+    .archived_at
+  await mutate(w, 'archive')
+  await mutate(w, 'restore')
+  expect((await rpc(member, 'board_snapshot', [board])).board.archived_at).toBe(
+    archivedAt,
   )
 })
 it('audit only owner, cursor does not repeat and private functions cannot bypass guards', async () => {

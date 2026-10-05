@@ -19,6 +19,11 @@ const items = ref<OnlineBoard[]>([]),
   pending = ref(false),
   archived = ref(false)
 const attempt = ref<{ id: string; name: string } | null>(null)
+const canCreate = computed(
+  () =>
+    ['owner', 'member'].includes(workspace.current?.role ?? '') &&
+    !workspace.current?.archived_at,
+)
 let active = true
 const shown = computed(() =>
   items.value.filter((b) => Boolean(b.archived_at) === archived.value),
@@ -42,7 +47,7 @@ async function create() {
   if (
     pending.value ||
     loading.value ||
-    !workspace.owner ||
+    !canCreate.value ||
     workspace.current?.archived_at
   )
     return
@@ -102,7 +107,7 @@ onBeforeUnmount(() => {
       {{ error || workspace.error }}
     </p>
     <form
-      v-if="workspace.owner && !workspace.current?.archived_at"
+      v-if="canCreate"
       class="mt-6 flex flex-wrap items-end gap-3 rounded-xl border bg-card p-5"
       @submit.prevent="create"
     >
