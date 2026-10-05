@@ -44,6 +44,7 @@ import {
 } from './model'
 import TaskExtras from '@/features/tasks/TaskExtras.vue'
 import TaskThread from '@/features/tasks/TaskThread.vue'
+import TaskWatch from '@/features/notifications/TaskWatch.vue'
 import { useTaskThreadStore } from '@/stores/taskThread'
 import { taskLink } from '@/features/tasks/model'
 import { useOnlineBoardStore } from '@/stores/onlineBoard'
@@ -317,6 +318,16 @@ async function archive() {
         }}</DialogDescription></DialogHeader
       >
       <div v-if="task" class="grid gap-2">
+        <TaskWatch
+          v-if="
+            open &&
+            !taskArchived &&
+            !store.snapshot?.board.archived_at &&
+            !store.snapshot?.workspace?.archived_at
+          "
+          :key="task.id"
+          :task="task.id"
+        />
         <div class="flex flex-wrap items-center gap-2">
           <Button type="button" variant="outline" @click="copyLink"
             >Sao chép link task</Button

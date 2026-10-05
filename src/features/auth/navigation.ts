@@ -29,6 +29,7 @@ export function safeRedirect(value: unknown): string {
     }
   }
   const paths: string[] = [
+    '/notifications',
     appConfig.routes.board,
     authConfig.routes.account,
     workspaceConfig.listPath,

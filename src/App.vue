@@ -8,6 +8,7 @@ import { computed, ref, watch } from 'vue'
 import { useMediaQuery } from '@vueuse/core'
 import AccountMenu from '@/components/AccountMenu.vue'
 import AppNavigation from '@/components/AppNavigation.vue'
+import NotificationSync from '@/features/notifications/NotificationSync.vue'
 import {
   Dialog,
   DialogContent,
@@ -67,6 +68,7 @@ watch(
   { immediate: true },
 )
 const workspaceLabel = computed(() => {
+  if (route.path === '/notifications') return 'Thông báo'
   if (route.path === '/my-tasks') return 'Công việc của tôi'
   const id = String(
     route.params.workspaceId || onlineBoard.snapshot?.board.workspace_id || '',
@@ -180,6 +182,7 @@ async function logout() {
       <p v-if="auth.error" role="alert" class="m-4 text-sm text-destructive">
         {{ auth.error }}
       </p>
+      <NotificationSync v-if="auth.authenticated" :key="auth.user?.id" />
       <RouterView :key="route.path + (auth.user?.id ?? 'guest')" />
     </div>
   </div>

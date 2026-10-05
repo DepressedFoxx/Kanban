@@ -5,17 +5,34 @@ import {
   LayoutDashboard,
   UserRound,
   ListTodo,
+  Bell,
 } from '@lucide/vue'
+import { useNotificationsStore } from '@/stores/notifications'
 import { appConfig } from '@/config/app'
 import { authConfig } from '@/features/auth/config'
 import { workspaceConfig } from '@/features/workspaces/config'
 import { useAuthStore } from '@/stores/auth'
 const route = useRoute()
 const auth = useAuthStore()
+const notifications = useNotificationsStore()
 const emit = defineEmits<{ navigate: [] }>()
 </script>
 <template>
   <nav class="flex flex-col gap-2" aria-label="Điều hướng chính">
+    <RouterLink
+      v-if="auth.authenticated"
+      to="/notifications"
+      class="nav-link"
+      @click="emit('navigate')"
+      ><Bell :size="17" class="shrink-0" aria-hidden="true" />Thông báo<span
+        v-if="notifications.feed?.unread"
+        class="ml-auto rounded-full bg-primary px-2 text-xs text-primary-foreground"
+        :aria-label="notifications.feed.unread + ' thông báo chưa đọc'"
+        >{{
+          notifications.feed.unread > 99 ? '99+' : notifications.feed.unread
+        }}</span
+      ></RouterLink
+    >
     <RouterLink
       v-if="auth.authenticated"
       to="/my-tasks"

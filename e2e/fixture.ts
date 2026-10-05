@@ -197,7 +197,9 @@ export class Harness {
         const result = await this.rpc(actor, name, args)
         if (
           (name === 'board_mutate' ||
-            name === 'task_saved_filter_mutate') &&
+            name === 'task_saved_filter_mutate' ||
+            name === 'notification_mutate' ||
+            name === 'notification_invitation_accept') &&
           this.loseNextWrite
         ) {
           this.loseNextWrite = false
