@@ -211,7 +211,8 @@ describe('online board UI', () => {
     expect(
       (document.querySelector('#online-task-title') as HTMLInputElement).value,
     ).toBe('New unsaved task')
-    expect(document.body.textContent).toContain('Giữ bản nháp để lưu')
+    expect(document.querySelector('[role="dialog"]')).not.toBeNull()
+    expect(document.body.textContent).toContain('Lưu công việc')
   })
   it('preserves a dirty board name and requires reconciliation after a new snapshot', async () => {
     const { pinia } = await render(true)
@@ -339,6 +340,9 @@ describe('task draft protection', () => {
       board: { ...board, version: 2 },
       tasks: [{ ...task, title: 'Server title' }],
     } as any
+    // The mocked server must reflect the remote update too: the initial
+    // collaboration refresh can finish after this assertion's setup.
+    api.snapshot.mockResolvedValue(store.snapshot)
     await flushPromises()
     expect(document.body.textContent).toContain('Hiện tại: Server title')
     expect(document.body.textContent).toContain('Bản nháp: My draft')
