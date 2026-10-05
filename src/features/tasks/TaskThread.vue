@@ -117,6 +117,9 @@ const actions = {
   restored: 'đã khôi phục công việc',
 }
 const fields: Record<string, string> = {
+  attachment_added: 'Thêm file',
+  attachment_removed: 'Xoá file',
+  attachment_delete_reason: 'Lý do xoá file',
   title: 'Tên',
   description: 'Mô tả',
   status: 'Trạng thái',

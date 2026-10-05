@@ -22,6 +22,7 @@ import {
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog'
 import PageHeader from '@/components/PageHeader.vue'
+import WorkspaceExport from '@/features/attachments/WorkspaceExport.vue'
 import { useWorkspaceSettingsStore } from '@/stores/workspaceSettings'
 import { workspaceApi } from '../api'
 import { type Member } from '../model'
@@ -257,6 +258,7 @@ const labels: Record<string, string> = {
       >Xác nhận lại thao tác</Button
     >
     <template v-if="store.snapshot">
+      <WorkspaceExport v-if="store.owner" :workspace="id" />
       <p
         v-if="store.snapshot.archived_at"
         role="status"
@@ -276,7 +278,7 @@ const labels: Record<string, string> = {
         >
       </div>
       <form
-        class="mt-6 grid max-w-2xl gap-4 rounded-xl border bg-card p-5"
+        class="surface-panel mt-6 grid max-w-2xl gap-4"
         @submit.prevent="save"
       >
         <h2 class="text-lg font-semibold">Thông tin chung</h2>
@@ -332,7 +334,7 @@ const labels: Record<string, string> = {
           >Lưu cài đặt</Button
         >
       </form>
-      <section class="mt-6 max-w-2xl rounded-xl border bg-card p-5">
+      <section class="surface-panel mt-6 max-w-2xl">
         <h2 class="text-lg font-semibold">Quyền sở hữu và vòng đời</h2>
         <div class="mt-4 flex flex-wrap gap-3">
           <template v-if="store.owner"
@@ -364,7 +366,7 @@ const labels: Record<string, string> = {
           >
         </div>
       </section>
-      <section v-if="store.owner" class="mt-6 max-w-2xl">
+      <section v-if="store.owner" class="surface-panel mt-6 max-w-2xl">
         <h2 class="text-lg font-semibold">Lịch sử quản trị</h2>
         <p v-if="!store.activity.length" class="mt-3 text-sm">
           Chưa có hoạt động quản trị từ khi bật Settings.

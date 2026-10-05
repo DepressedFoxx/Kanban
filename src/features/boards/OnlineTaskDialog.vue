@@ -43,6 +43,7 @@ import {
   type TaskDraft,
 } from './model'
 import TaskExtras from '@/features/tasks/TaskExtras.vue'
+import TaskAttachments from '@/features/attachments/TaskAttachments.vue'
 import TaskThread from '@/features/tasks/TaskThread.vue'
 import TaskWatch from '@/features/notifications/TaskWatch.vue'
 import { useTaskThreadStore } from '@/stores/taskThread'
@@ -61,6 +62,7 @@ const showLink = ref(false)
 const showDiscussion = ref(false)
 const commentDirty = ref(false)
 const extrasDirty = ref(false)
+const attachmentsDirty = ref(false)
 const initialDraft = ref('')
 const confirmDiscard = ref(false)
 let resolveNavigation: ((value: boolean) => void) | undefined
@@ -77,7 +79,8 @@ const dirty = computed(
   () =>
     draftKey() !== initialDraft.value ||
     commentDirty.value ||
-    extrasDirty.value,
+    extrasDirty.value ||
+    attachmentsDirty.value,
 )
 function requestClose(value = false) {
   if (
@@ -97,6 +100,7 @@ function decideDiscard(discard: boolean) {
     initialDraft.value = draftKey()
     commentDirty.value = false
     extrasDirty.value = false
+    attachmentsDirty.value = false
   }
   if (resolveNavigation) {
     resolveNavigation(discard)
@@ -264,6 +268,7 @@ watch(
       showDiscussion.value = false
       commentDirty.value = false
       extrasDirty.value = false
+      attachmentsDirty.value = false
       initialDraft.value = draftKey()
     }
   },
@@ -282,7 +287,8 @@ watch(
     if (props.open) {
       initialDraft.value = draftKey()
       baseVersion.value = store.snapshot?.board.version ?? 0
-      if (!commentDirty.value && !extrasDirty.value) emit('update:open', false)
+      if (!commentDirty.value && !extrasDirty.value && !attachmentsDirty.value)
+        emit('update:open', false)
     }
   },
 )
@@ -540,6 +546,14 @@ async function archive() {
         "
         >Nhân bản công việc đã lưu</Button
       >
+      <TaskAttachments
+        v-if="task && open"
+        :key="task.id"
+        :task="task.id"
+        :revision="store.snapshot?.board.version"
+        :read-only="!canEdit"
+        @draft-change="attachmentsDirty = $event"
+      />
       <TaskThread
         v-if="task && open"
         v-show="showDiscussion"
