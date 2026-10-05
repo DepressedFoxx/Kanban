@@ -215,10 +215,7 @@ onBeforeUnmount(() => {
 </script>
 <template>
   <div>
-    <section
-      class="mt-5 min-w-0 border-t pt-5"
-      aria-label="Thảo luận và lịch sử"
-    >
+    <section class="task-section min-w-0" aria-label="Thảo luận và lịch sử">
       <div class="flex flex-wrap items-center gap-2">
         <Button
           type="button"

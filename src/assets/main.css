@@ -159,7 +159,7 @@ button:disabled {
 
 .field {
   display: grid;
-  gap: 7px;
+  gap: var(--field-gap);
   font-size: 12px;
   font-weight: 500;
   min-width: 0;
@@ -515,9 +515,9 @@ button:disabled {
 }
 .task-actions {
   position: sticky;
-  bottom: -24px;
+  bottom: calc(-1 * var(--panel-padding));
   z-index: 1;
-  background: var(--background);
+  background: var(--card);
   padding: 16px 0;
   border-top: 1px solid var(--border);
 }
@@ -577,4 +577,24 @@ button:disabled {
 .account-menu-item[data-disabled] {
   opacity: 0.5;
   pointer-events: none;
+}
+
+/* Shared surfaces keep section spacing independent of individual form layouts. */
+.surface-panel {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  padding: var(--panel-padding);
+}
+.task-section {
+  border-top: 1px solid var(--divider);
+  padding-top: 16px;
+}
+.board-options {
+  background: var(--card);
+}
+@media (min-width: 640px) {
+  :root {
+    --panel-padding: 24px;
+  }
 }

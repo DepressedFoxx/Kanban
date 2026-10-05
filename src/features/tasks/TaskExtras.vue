@@ -88,7 +88,7 @@ watch(
 </script>
 <template>
   <section
-    class="mt-5 min-w-0 space-y-4 border-t pt-4"
+    class="task-section min-w-0 space-y-4"
     aria-label="Nhãn và checklist"
   >
     <h3 class="font-semibold">Nhãn</h3>

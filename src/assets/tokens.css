@@ -1,13 +1,16 @@
 /* Shared light theme: blue actions, white editable controls, slate read-only surfaces. */
 :root {
   color-scheme: light;
-  --background: #f8fafc;
+  --background: #eef2f6;
   --foreground: #0f172a;
   --primary: #2457d6;
   --primary-foreground: #ffffff;
   --muted: #f1f5f9;
   --muted-foreground: #475569;
-  --border: #e2e8f0;
+  --border: #cbd5e1;
+  --divider: #e2e8f0;
+  --field-gap: 8px;
+  --panel-padding: 16px;
   --ring: #2457d6;
   --card: #ffffff;
   --card-foreground: #0f172a;
@@ -33,7 +36,7 @@
   --field-disabled-background: #e2e8f0;
   --field-disabled-foreground: #64748b;
   --sidebar-background: #ffffff;
-  --column-background: #f1f5f9;
+  --column-background: #e2e8f0;
   --status-todo: #64748b;
   --status-doing: #2457d6;
   --status-review: #7c3aed;
