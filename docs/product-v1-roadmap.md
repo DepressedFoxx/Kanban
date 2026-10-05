@@ -1,6 +1,6 @@
 # Kế hoạch phát triển Kanban v1
 
-Ngày lập: 2026-10-02 (Asia/Bangkok). Trạng thái: G0 hoàn thành đặc tả ngày 2026-10-02; G1 đã triển khai và kiểm thử local/cloud; còn các ca nghiệm thu ghi tại [báo cáo G1](g1-verification.md). G2–G6 chưa triển khai. Xem [đặc tả G0 và hợp đồng G1](product-v1-spec.md). Các ô chưa đánh dấu là công việc cần thực hiện, không phải tính năng đã có.
+Ngày lập: 2026-10-02; cập nhật: 2026-10-05 (Asia/Bangkok). G0 đã chốt đặc tả; G1–G3 đã triển khai và kiểm thử các luồng chính trên local/cloud. G4 đã áp dụng migration và đạt E2E cloud ngày 2026-10-05. Bằng chứng và giới hạn nằm trong [G1](g1-verification.md), [G2](g2-verification.md), [G3](g3-verification.md) và [G4](g4-verification.md). G5 đã triển khai và kiểm thử cloud, xem [G5](g5-verification.md); G6 đang nghiệm thu, xem [bằng chứng G6](g6-verification.md). Xem [đặc tả v1](product-v1-spec.md). Checkbox triển khai và checkbox nghiệm thu được theo dõi riêng.
 
 ## 1. Mục tiêu và phạm vi
 
@@ -90,40 +90,45 @@ Xóa tài khoản và xóa workspace vĩnh viễn là hạng mục riêng sau kh
 
 ### Công việc
 
-- [ ] Danh mục nhãn workspace: tên/màu; task có thể gắn nhiều nhãn. Nhãn có chữ, không chỉ phân biệt bằng màu.
-- [ ] Checklist: thêm/sửa/tick/sắp xếp/xóa mục và hiển thị tiến độ.
-- [ ] Nhân bản task với phạm vi sao chép rõ; mặc định không sao chép comment, activity hoặc attachment.
-- [ ] Thao tác hàng loạt ban đầu: đổi trạng thái và archive; xác nhận số lượng và quy tắc toàn bộ thành công hoặc kết quả từng mục.
-- [ ] Sửa/xóa comment theo ma trận; có dấu đã sửa và quy tắc lưu dấu vết khi xóa.
-- [ ] Thiết kế version/receipt cho dữ liệu mới dựa trên cơ chế hiện có; không ghi đè thay đổi người khác một cách im lặng.
+- [x] Danh mục nhãn workspace: tên/màu; task có thể gắn nhiều nhãn. Nhãn có chữ, không chỉ phân biệt bằng màu.
+- [x] Checklist: thêm/sửa/tick/sắp xếp/xóa mục và hiển thị tiến độ.
+- [x] Nhân bản task với phạm vi sao chép rõ; mặc định không sao chép comment, activity hoặc attachment.
+- [x] Thao tác hàng loạt ban đầu: đổi trạng thái và archive; xác nhận số lượng và quy tắc toàn bộ thành công hoặc kết quả từng mục.
+- [x] Sửa/xóa comment theo ma trận; có dấu đã sửa và quy tắc lưu dấu vết khi xóa.
+- [x] Thiết kế version/receipt cho dữ liệu mới dựa trên cơ chế hiện có; không ghi đè thay đổi người khác một cách im lặng.
 
 ### Nghiệm thu
 
-- [ ] Hai phiên sửa/tick/reorder cạnh tranh không mất dữ liệu; conflict được giải thích và draft được giữ.
-- [ ] Retry không tạo checklist, task hay log trùng.
-- [ ] Viewer và người ngoài không ghi được bằng RPC trực tiếp.
-- [ ] Xóa nhãn không làm hỏng task; task nhân bản có ID và lịch sử riêng.
-- [ ] Menu/bàn phím thực hiện được các hành động chính tương đương kéo thả.
+- [x] Hai mutation checklist cùng version cho một thành công/một PT409; UI giữ draft khi conflict.
+- [ ] Bổ sung ca concurrent reorder checklist riêng.
+- [x] Receipt SQL và retry UI checklist/comment không tạo bản ghi trùng trong các ca đã kiểm thử.
+- [x] Viewer bị chặn ghi G2 trong SQL/cloud đã kiểm thử.
+- [ ] Bổ sung ma trận outsider cho từng action G2 qua RPC trực tiếp.
+- [x] Xóa nhãn không làm hỏng task; task nhân bản có ID và lịch sử riêng.
+- [ ] Nghiệm thu toàn bộ thêm/sửa/tick/reorder/xóa checklist chỉ bằng bàn phím; đã có nút Lên/Xuống và axe mobile đạt.
 
 ## 7. G3 — My Tasks và tìm/lọc
 
-- [ ] Trang My Tasks: việc của tôi, quá hạn, hôm nay/sắp tới, đã hoàn thành.
-- [ ] Filter theo workspace, board, status, priority, label và ngày hạn; sắp xếp có quy tắc ổn định.
-- [ ] Lưu bộ lọc theo người dùng; v1 chưa cần chia sẻ filter.
-- [ ] Search trong phạm vi dữ liệu được quyền xem; quyết định tìm tiêu đề/mô tả trước khi thêm full-text search.
-- [ ] Pagination cho danh sách tổng hợp; không áp dụng máy móc pagination cho board kéo thả.
-- [ ] Empty/error/loading và link đến task vẫn có ngữ cảnh để quay lại.
+- [x] Trang My Tasks: việc của tôi, quá hạn, hôm nay/sắp tới, đã hoàn thành.
+- [x] Filter theo workspace, board, status, priority, label và ngày hạn; sắp xếp có quy tắc ổn định.
+- [x] Lưu bộ lọc theo người dùng; v1 chưa cần chia sẻ filter.
+- [x] Search tiêu đề/mô tả dạng chuỗi con không phân biệt hoa/thường, trong phạm vi được quyền xem.
+- [x] Pagination cho danh sách tổng hợp; không áp dụng máy móc pagination cho board kéo thả.
+- [x] Empty/error/loading và link đến task vẫn có ngữ cảnh để quay lại.
 
 Nghiệm thu: bộ lọc kết hợp đúng, không lộ dữ liệu workspace đã mất quyền, ngày quá hạn nhất quán, archived không xuất hiện sai phạm vi; thay đổi assignee/status phản ánh vào danh sách.
 
+Bằng chứng SQL, store, browser local/cloud và giới hạn còn lại: [G3](g3-verification.md). Không coi kiểm tra axe là nghiệm thu screen reader thực tế.
+
 ## 8. G4 — Notification Center
 
-- [ ] Theo dõi/bỏ theo dõi task; quy tắc mặc định của assignee được mô tả rõ.
-- [ ] Thông báo khi được giao việc và có comment trên task đang theo dõi; sự kiện lời mời dùng email đích đã khớp tài khoản.
-- [ ] Đọc/chưa đọc, đọc tất cả, phân trang và liên kết đến task/workspace.
-- [ ] Tùy chọn nhận thông báo trong app; không tự gửi email.
-- [ ] Sự kiện được tạo từ thao tác server đã thành công; có khóa chống trùng theo sự kiện/người nhận.
-- [ ] Không gửi thông báo cho chính người thực hiện nếu không cần; xử lý gộp hoặc giới hạn nhiễu.
+- [x] Theo dõi/bỏ theo dõi task; assignee mặc định theo dõi nếu chưa có override.
+- [x] Thông báo giao việc/comment; lời mời khớp email tài khoản đã verified tại thời điểm tạo.
+- [x] Đọc/chưa đọc, đọc tất cả, phân trang và liên kết task/workspace.
+- [x] Tùy chọn nhận trong app, không gửi email.
+- [x] Trigger cùng transaction và khóa chống trùng; SQL local đã kiểm tra rollback/retry.
+- [x] Loại chính người thao tác, opt-out theo task/loại; không toast/email/push từng sự kiện.
+- [x] Áp dụng migration và nghiệm thu cloud hai phiên, cập nhật advisor; xem [báo cáo G4](g4-verification.md).
 
 Nghiệm thu: retry không sinh thông báo trùng; danh tính người nhận do server quyết định; mất quyền thì nội dung cũ/link không làm lộ dữ liệu; đánh dấu đã đọc đồng bộ giữa các phiên. Mention để sau v1, không đưa thêm cú pháp và quyền mention vào mốc này.
 
@@ -131,18 +136,18 @@ Nghiệm thu: retry không sinh thông báo trùng; danh tính người nhận d
 
 ### Attachment
 
-- [ ] Chốt loại file, kích thước tối đa và quota; kiểm tra phía server/storage.
-- [ ] File private theo quyền task/workspace, tên lưu không phụ thuộc trực tiếp tên người dùng nhập.
-- [ ] Upload có trạng thái và retry; metadata chỉ phản ánh file đã được xác nhận.
-- [ ] Xóa/thu hồi file theo quyền; xử lý file mồ côi khi upload hoặc ghi metadata thất bại.
-- [ ] Thiết kế thời hạn URL tải, cache và giới hạn thu hồi đối với URL đã cấp; ghi rõ giới hạn thay vì hứa thu hồi tức thời.
+- [x] Chốt loại file, kích thước tối đa và quota; kiểm tra phía server/storage.
+- [x] File private theo quyền task/workspace, tên lưu không phụ thuộc trực tiếp tên người dùng nhập.
+- [x] Upload có trạng thái và retry; metadata chỉ phản ánh file đã được xác nhận.
+- [x] Xóa/thu hồi file theo quyền; xử lý file mồ côi khi upload hoặc ghi metadata thất bại.
+- [x] Thiết kế thời hạn URL tải, cache và giới hạn thu hồi đối với URL đã cấp; ghi rõ giới hạn thay vì hứa thu hồi tức thời.
 
 ### Export và khôi phục
 
-- [ ] Owner export dữ liệu theo schema có phiên bản, không chứa credentials/token hoặc dữ liệu workspace khác.
-- [ ] Quy định rõ file attachment có nằm trong export hay chỉ có metadata.
-- [ ] Tách export sản phẩm khỏi backup database/Auth/Storage.
-- [ ] Viết và thử quy trình khôi phục trên dữ liệu QA riêng; xác minh liên kết task/comment/file và quyền sau khôi phục.
+- [x] Owner export dữ liệu theo schema có phiên bản, không chứa credentials/token hoặc dữ liệu workspace khác.
+- [x] Quy định rõ file attachment có nằm trong export hay chỉ có metadata.
+- [x] Tách export sản phẩm khỏi backup database/Auth/Storage.
+- [x] Viết và thử quy trình khôi phục trên dữ liệu QA riêng; xác minh liên kết task/comment/file và quyền sau khôi phục.
 
 Nghiệm thu: lỗi giữa upload/metadata có đường phục hồi; người ngoài không tải file dù biết ID; export đầy đủ theo phạm vi công bố; bằng chứng restore ghi rõ nguồn, đích và các dữ liệu không được bao gồm.
 
@@ -152,7 +157,7 @@ Nghiệm thu: lỗi giữa upload/metadata có đường phục hồi; người 
 - [ ] E2E nhiều tài khoản gồm quyền trực tiếp, role changes, archive, concurrent writes, retry và reconnect cho các module mới.
 - [ ] Test keyboard/focus/Escape, axe và trạng thái động; thử Narrator/NVDA thực tế và thiết bị cảm ứng khi có phương tiện kiểm chứng.
 - [ ] Nghiệm thu email recovery/verification thật; không coi mock là bằng chứng inbox.
-- [ ] Đo lại baseline 100 task/5 phiên với mục tiêu cập nhật trong 2 giây; ghi số mẫu, môi trường và cách đo.
+- [x] Đo lại baseline 100 task/5 phiên: 25 mẫu, 855–1943ms, tất cả dưới 2 giây; xem G6.
 - [ ] Đo route tải đầu, bundle, truy vấn và board lớn trước khi chọn code splitting/index/virtualization. Ghi ngân sách hiệu năng đã thống nhất trước khi tối ưu.
 - [ ] Kiểm tra lỗi có thông điệp, đường retry và dữ liệu chẩn đoán phù hợp; không log password/token/nội dung riêng không cần thiết.
 - [ ] Build, typecheck, format và bộ kiểm thử liên quan đạt; credentials không nằm trong Git/bundle.
@@ -191,4 +196,4 @@ Không đánh dấu toàn bộ v1 đạt khi kiểm tra bắt buộc còn thiế
 
 ## 13. Điểm bắt đầu của lượt triển khai tiếp theo
 
-Hoàn tất các ca nghiệm thu còn mở trong [báo cáo G1](g1-verification.md), đặc biệt email thật và race quyền; sau đó triển khai G2 theo từng luồng. Không bắt đầu đồng thời tất cả các mốc.
+G5 đã triển khai attachment, export và diễn tập restore QA; xem [bằng chứng và giới hạn](g5-verification.md). G6 đang nghiệm thu: 21 E2E local, 6 E2E cloud đạt; đã áp dụng quyền Member tạo board. Xem [G6](g6-verification.md) và các mục còn mở. Tiếp tục theo dõi các ca còn mở trong báo cáo G1–G4; chưa chốt nghiệm thu toàn bộ v1. Không bắt đầu đồng thời tất cả các mốc.

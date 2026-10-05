@@ -1,13 +1,17 @@
 # Workspace và thành viên
 
+Cập nhật docs 2026-10-03: workspace online đã tích hợp Board/Task, Collab, G1 Settings/lifecycle và G2. Xem [G1](g1-verification.md), [G2](g2-verification.md) và [báo cáo MVP](mvp-verification.md) cho bằng chứng theo ngày.
+
 ## Đã triển khai trong source
 
 - `/workspaces`: danh sách workspace được phép truy cập; tạo workspace và trở thành Owner trong cùng transaction.
-- `/workspaces/:workspaceId/members`: đổi workspace, đổi tên, xem thành viên. Owner tạo link mời theo email với vai trò Member/Viewer, đổi vai trò, gỡ thành viên, thu hồi lời mời. Không tự gỡ Owner, đổi Owner hoặc cấp thêm Owner.
+- `/workspaces/:workspaceId/members`: đổi workspace, đổi tên, xem thành viên. Owner tạo link mời theo email với vai trò Member/Viewer, đổi vai trò, gỡ thành viên, thu hồi lời mời. Không tự gỡ Owner hoặc cấp thêm Owner qua form đổi role. G1 có luồng chuyển Owner riêng tại `/workspaces/:workspaceId/settings`, cùng sửa mô tả/timezone, rời nhóm và archive/restore.
 - `/invite/:token`: đăng nhập đúng email và chấp nhận lời mời. Link dùng một lần, hết hạn sau 7 ngày. Nhận lại cùng link khi vẫn là thành viên là idempotent; bị gỡ thì không dùng lại link đã nhận để tự tham gia.
 - Không gửi email. Owner sao chép link rồi tự gửi qua kênh mình chọn. Người nhận phải truy cập được origin trong link; link localhost không dùng từ máy khác. Cần triển khai frontend lên domain dùng chung trước khi mời người khác từ xa.
 
-## Bước bắt buộc trên Supabase thật
+## Thiết lập môi trường Supabase mới
+
+Project hiện tại đã áp dụng migrations qua G3. Hướng dẫn dưới đây mô tả migration workspace ban đầu; môi trường mới cần toàn bộ migrations theo thứ tự tên file, gồm G1–G3. Không chạy lại migration đã áp dụng.
 
 Publishable key không có quyền tạo schema. Source đã có migration nhưng không tự áp dụng vào Supabase từ frontend.
 
@@ -25,17 +29,17 @@ RLS chỉ cho thành viên đọc workspace/membership. Client không có quyề
 
 Owner mutations và accept invite khóa workspace trước, rồi invitation; việc nhận/thu hồi/gỡ thành viên được tuần tự hóa theo workspace. Token 32 byte ngẫu nhiên chỉ trả về một lần; database lưu SHA-256, không expose token hash cho client. Tạo lại lời mời cùng email thu hồi các lời mời đang chờ trước đó. Danh sách lời mời chỉ Owner được đọc.
 
-Tên hiển thị lấy từ auth user metadata khi liệt kê thành viên; chỉ thành viên của workspace được xem email/tên của nhau. Chưa cần bảng profiles riêng cho module này. Owner được bảo vệ bằng đường ghi RPC và unique index một owner/workspace; owner_id là khóa tham chiếu danh tính tạo workspace.
+Tên hiển thị lấy từ auth user metadata khi liệt kê thành viên; chỉ thành viên của workspace được xem email/tên của nhau. Chưa cần bảng profiles riêng cho module này. Owner được bảo vệ bằng RPC, unique index và deferred constraint của G1: đúng một Owner, owner_id khớp membership tại cuối transaction. owner_id là Owner hiện tại và thay đổi khi chuyển quyền.
 
-Giao diện tải lại quyền khi focus và mỗi 30 giây trong tab đang hiển thị. Database kiểm tra mỗi request; khi phát hiện mất quyền, cache chi tiết bị xóa. Chưa có subscription realtime cho thu hồi quyền tức thời. Đăng xuất/đổi tài khoản xóa store và loại bỏ kết quả request cũ.
+Giao diện tải lại quyền khi focus và mỗi 30 giây trong tab đang hiển thị. Database kiểm tra mỗi request; khi phát hiện mất quyền, cache chi tiết bị xóa. Có realtime invalidation và kiểm tra định kỳ dự phòng; không hứa thu hồi tức thời dữ liệu đã tải ở phiên offline. Đăng xuất/đổi tài khoản xóa store và loại bỏ kết quả request cũ.
 
 ## Ranh giới hiện tại
 
-Workspace/membership dùng database sau khi áp dụng migration. Board `/board` vẫn là board cá nhân local, chưa thuộc workspace; không có board cộng tác, RLS task, comment hay realtime. Do đó chưa coi M1/M2 hoàn thành. Gỡ member hiện không cập nhật assignee task vì chưa có task database liên kết; bước tích hợp board online phải thêm xử lý này cùng transaction.
+Workspace/board/task/comment lưu trong database theo quyền membership. `/board` chuyển tới danh sách workspace; board cá nhân local ở `/personal-board`. Gỡ hoặc rời workspace bỏ assignment qua trigger và tăng board version trong cùng transaction, giữ task/comment/activity.
 
-Chưa có chuyển Owner, xóa workspace, tự rời workspace, email tự động, hoặc migration dữ liệu board local lên cloud. Đổi quyền Member/Viewer hiện áp dụng quản lý workspace; quyền ghi task online cần được thực thi khi có module board online.
+Đã có chuyển Owner, tự rời và archive/restore workspace. Chưa có xóa workspace vĩnh viễn, email mời tự động hoặc import board local lên cloud. Owner/Member ghi task/comment theo trạng thái active; Viewer chỉ đọc.
 
-## Kiểm chứng
+## Kiểm chứng ban đầu — lịch sử trước G1/G2
 
 `npm test` chạy cả Vitest logic, component Vue với jsdom và PostgreSQL nhúng PGlite. Test database chạy nguyên migration trên một database bộ nhớ riêng, giả lập auth.users/auth.uid và role của Supabase; không ghi dữ liệu test lên cloud.
 
@@ -49,4 +53,4 @@ Tài liệu tham khảo: https://supabase.com/docs/guides/database/functions và
 
 ## Cập nhật board online (2026-09-30)
 
-Board/task trong workspace đã có migration 002 và đã kiểm tra cloud bằng Owner. Xem [module board](boards.md) để biết setup và phạm vi hiện tại. Board local cũ giữ tại `/personal-board`, không tự import. Các ghi chú ở phần kiểm thử ban đầu phía trên là trạng thái trước khi chạy migration; hiện đã kiểm chứng tạo/đổi tên workspace và tạo/thu hồi lời mời trên cloud. Luồng nhiều tài khoản vẫn chưa nghiệm thu cloud.
+Board/task trong workspace đã có migration 002 và đã kiểm tra cloud bằng Owner. Xem [module board](boards.md) để biết setup và phạm vi hiện tại. Board local cũ giữ tại `/personal-board`, không tự import. Các ghi chú ở phần kiểm thử ban đầu phía trên là trạng thái trước khi chạy migration; hiện đã kiểm chứng tạo/đổi tên workspace và tạo/thu hồi lời mời trên cloud. Tại lượt 2026-09-30, luồng nhiều tài khoản còn mở. Các lượt cloud ngày 2026-10-01/02 đã kiểm thử nhiều tài khoản; xem báo cáo MVP/G1/G2 ở đầu tài liệu.

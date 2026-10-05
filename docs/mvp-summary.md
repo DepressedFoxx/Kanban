@@ -18,4 +18,4 @@ Phạm vi: frontend dev local + Supabase cloud; chưa deploy. Các module Auth, 
 
 Xem [báo cáo nghiệm thu và lệnh chạy](mvp-verification.md), [yêu cầu/ma trận quyền](requirements.md), [Collab](collab.md), [Sync](sync.md).
 
-G0 v1 hoàn thành đặc tả ngày 2026-10-02: [quyết định sản phẩm và thiết kế G1](product-v1-spec.md). Không đồng nghĩa G1 đã triển khai.
+G0 v1 hoàn thành đặc tả ngày 2026-10-02: [quyết định sản phẩm và thiết kế G1](product-v1-spec.md). Cập nhật 2026-10-03: G1–G3 đã triển khai; xem [nghiệm thu G1](g1-verification.md), [G2](g2-verification.md) và [G3](g3-verification.md). Checklist MVP và số liệu ngày 2026-10-01 ở trên giữ nguyên như bằng chứng lịch sử.

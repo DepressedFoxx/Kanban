@@ -1,12 +1,14 @@
 # Yêu cầu dự án Kanban
 
+> Phần mở rộng cập nhật 2026-10-05: G1–G5 đã triển khai; xem [roadmap v1](product-v1-roadmap.md) và [G5](g5-verification.md). Số liệu MVP bên dưới được giữ làm lịch sử, không phải số liệu bộ test hiện tại.
+
 > Cập nhật nghiệm thu 2026-10-01: ba tài khoản thật đã kiểm tra cloud, 125 tests SQL/unit và 10 E2E local đạt. Kết quả mới, benchmark và giới hạn xem [mvp-verification.md](mvp-verification.md). Các kết quả ở lượt triển khai trước bên dưới là lịch sử, không thay thế báo cáo mới.
 
 Phạm vi được xác nhận ngày 2026-10-01: frontend chạy dev local, dùng Supabase cloud hiện có; chưa có kế hoạch deploy. M3 là MVP cộng tác chạy được và được nghiệm thu ở môi trường này. Deployment, hosting, domain, CI remote và vận hành production không phải điều kiện chốt MVP local. Kiểm thử nhiều tài khoản trên Supabase vẫn cần thiết, không yêu cầu deploy frontend.
 
 Ngày lập: 2026-09-29. Cập nhật: 2026-10-01. Phiên bản tài liệu: 0.4.
 
-**Đối chiếu 2026-10-02: các module MVP đã triển khai; cloud nhiều tài khoản, conflict/retry/reconnect, thu hồi quyền và comment realtime đã kiểm tra ngày 2026-10-01. Email và screen reader/cảm ứng thực tế còn mở. G0 v1 đã chốt đặc tả, G1 chưa triển khai.**
+**Đối chiếu 2026-10-03: các module MVP đã triển khai; cloud nhiều tài khoản, conflict/retry/reconnect, thu hồi quyền và comment realtime đã kiểm tra ngày 2026-10-01. Email và screen reader/cảm ứng thực tế còn mở. G0 đã chốt đặc tả, G1–G3 đã triển khai; đối chiếu trong [báo cáo G1](g1-verification.md), [G2](g2-verification.md) và [G3](g3-verification.md).**
 
 Tài liệu này cụ thể hóa phạm vi phát triển và tiêu chí nghiệm thu. Mục 4 mô tả quyền MVP hiện tại; mục 9 phân biệt phần đã triển khai với phần đã kiểm chứng. Các mục tiêu chất lượng và kịch bản nghiệm thu chưa đạt vẫn là yêu cầu cần hoàn thành, không phải cam kết tính năng đã được nghiệm thu.
 
@@ -68,7 +70,7 @@ MVP trong tài liệu này là **M3 trên dev local**, không đồng nghĩa ch�
 
 ### COLLAB — Trao đổi và lịch sử
 
-- COLLAB-01: Owner/Member thêm comment văn bản thuần tối đa 2.000 ký tự; Viewer chỉ đọc. MVP chưa có sửa/xóa comment, mention hay upload.
+- COLLAB-01: Owner/Member thêm comment văn bản thuần tối đa 2.000 ký tự; Viewer chỉ đọc. G2 cho phép tác giả còn quyền ghi sửa/xóa comment; Owner xóa comment người khác cần lý do/audit. Chưa có mention hay upload.
 - COLLAB-02: activity ghi ai, lúc nào, hành động và thay đổi khi tạo/sửa task, đổi cột, đổi assignee, lưu trữ/khôi phục task. Comment có tác giả/thời điểm riêng.
 - COLLAB-03: activity do database/server tạo cùng transaction với thay đổi, client không tự nhận là người khác hoặc sửa/xóa log.
 - Nghiệm thu: hai tài khoản thấy đúng tác giả; thay đổi thất bại không sinh activity thành công; retry không tạo trùng comment/task/activity.
@@ -88,20 +90,25 @@ MVP trong tài liệu này là **M3 trên dev local**, không đồng nghĩa ch�
 
 Các quyền dưới đây đã được thực thi trong RPC/RLS và có kiểm thử SQL local. Người dùng phải đăng nhập, xác minh email và còn membership trong workspace. UI/route guard hỗ trợ trải nghiệm; server là nơi quyết định quyền truy cập.
 
-| Hành động                                                 | Owner       | Member      | Viewer      |
-| --------------------------------------------------------- | ----------- | ----------- | ----------- |
-| Đọc board/task/comment/activity, kể cả dữ liệu đã lưu trữ | Có          | Có          | Có          |
-| Nhận cập nhật realtime của dữ liệu được phép đọc          | Có          | Có          | Có          |
-| Xem danh sách thành viên                                  | Có          | Có          | Có          |
-| Tạo/sửa/di chuyển task trong board đang hoạt động         | Có          | Có          | Không       |
-| Lưu trữ/khôi phục task trong board đang hoạt động         | Có          | Có          | Không       |
-| Thêm comment vào task và board đang hoạt động             | Có          | Có          | Không       |
-| Tạo/đổi tên/lưu trữ/khôi phục board                       | Có          | Không       | Không       |
-| Mời/gỡ người, sửa vai trò Member/Viewer                   | Có          | Không       | Không       |
-| Xem danh sách lời mời, thu hồi lời mời                    | Có          | Không       | Không       |
-| Đổi tên workspace                                         | Có          | Không       | Không       |
-| Sửa/xóa comment                                           | Chưa hỗ trợ | Chưa hỗ trợ | Chưa hỗ trợ |
-| Sửa/xóa activity log                                      | Không       | Không       | Không       |
+| Hành động                                                 | Owner                | Member | Viewer |
+| --------------------------------------------------------- | -------------------- | ------ | ------ |
+| Đọc board/task/comment/activity, kể cả dữ liệu đã lưu trữ | Có                   | Có     | Có     |
+| Nhận cập nhật realtime của dữ liệu được phép đọc          | Có                   | Có     | Có     |
+| Xem danh sách thành viên                                  | Có                   | Có     | Có     |
+| Tạo/sửa/di chuyển task trong board đang hoạt động         | Có                   | Có     | Không  |
+| Lưu trữ/khôi phục task trong board đang hoạt động         | Có                   | Có     | Không  |
+| Thêm comment vào task và board đang hoạt động             | Có                   | Có     | Không  |
+| Tạo/đổi tên/lưu trữ/khôi phục board                       | Có                   | Không  | Không  |
+| Mời/gỡ người, sửa vai trò Member/Viewer                   | Có                   | Không  | Không  |
+| Xem danh sách lời mời, thu hồi lời mời                    | Có                   | Không  | Không  |
+| Đổi tên workspace                                         | Có                   | Không  | Không  |
+| Sửa/xóa comment của mình khi còn quyền ghi                | Có                   | Có     | Không  |
+| Xóa comment người khác, bắt buộc lý do/audit              | Có                   | Không  | Không  |
+| Quản lý danh mục nhãn workspace                           | Có                   | Không  | Không  |
+| Gắn nhãn/checklist/duplicate/bulk task đang hoạt động     | Có                   | Có     | Không  |
+| Sửa settings/chuyển Owner/archive/restore workspace       | Có                   | Không  | Không  |
+| Rời workspace                                             | Sau khi chuyển Owner | Có     | Có     |
+| Sửa/xóa activity log                                      | Không                | Không  | Không  |
 
 ### Điều kiện và giới hạn
 
@@ -245,4 +252,4 @@ Chỉ đánh dấu MVP hoàn thành sau khi các nhóm yêu cầu MVP và kịch
 
 ## 12. Đặc tả mở rộng v1
 
-[product-v1-spec.md](product-v1-spec.md) chốt quyền, timezone, vòng đời, file/export và hợp đồng G1. Quyền MVP ở mục 4 vẫn mô tả code hiện có; các quyền v1 mới chỉ có hiệu lực sau triển khai/migration.
+[product-v1-spec.md](product-v1-spec.md) chốt quyền, timezone, vòng đời, file/export và hợp đồng G1. Quyền ở mục 4 đã cập nhật theo G1/G2. G3 đã có My Tasks và bộ lọc cá nhân, áp dụng cho mọi tài khoản verified nhưng chỉ đọc task đang được giao và còn quyền. G4–G5 và Member tạo board vẫn là mục tiêu v1, chưa triển khai. Xem [báo cáo G2](g2-verification.md) và [G3](g3-verification.md) cho API, giới hạn và bằng chứng. Không dùng kết quả lịch sử trong PRD thay cho nghiệm thu các tính năng mới.

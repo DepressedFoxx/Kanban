@@ -1,8 +1,12 @@
-# Đặc tả G0 và hợp đồng triển khai G1
+# Đặc tả sản phẩm v1 và đối chiếu G1–G5
 
 Ngày: 2026-10-02. G0 hoàn thành ở mức đặc tả dựa trên source/migration trong repository; G1 đã triển khai và migration đã áp dụng cloud. Xem [kết quả, API thực tế và khoảng trống nghiệm thu G1](g1-verification.md). Baseline bên dưới giữ lại hiện trạng trước G1 để đối chiếu. Các quyết định dưới đây là mặc định của kế hoạch v1, thay đổi sau này phải cập nhật đặc tả và test tương ứng.
 
+Cập nhật 2026-10-03: G2 đã triển khai nhãn, checklist, duplicate/bulk task và edit/delete comment; G3 đã có My Tasks và bộ lọc cá nhân. Xem API thực tế, bằng chứng và giới hạn [G2](g2-verification.md), [G3](g3-verification.md). Ma trận bên dưới là mục tiêu v1; G4 có trạng thái cập nhật bên dưới, quyền Member tạo board đã triển khai trong G6. Mọi tài khoản verified, kể cả Viewer, có thể lưu bộ lọc riêng; đây là tùy chọn cá nhân, không phải quyền ghi nội dung workspace.
+
 ## 1. Baseline được đối chiếu
+
+Cập nhật 2026-10-05: G4 đã triển khai, áp dụng migration và kiểm thử local/cloud. [Hợp đồng G4](g4-verification.md) bổ sung quyền cá nhân theo dõi task và bật/tắt thông báo cho cả Viewer, không mở rộng quyền ghi task/comment. Nhận lời mời trong app kiểm tra email verified tại server. G5 đã triển khai file private, export và restore QA; xem [bằng chứng G5](g5-verification.md). Quyền Member tạo board đã triển khai và áp dụng cloud trong G6.
 
 | Nguồn                                     | Hiện trạng                                                               | Chênh lệch cần xử lý                                                             |
 | ----------------------------------------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
@@ -150,7 +154,7 @@ Tên dưới đây là thiết kế G0. G1 thực tế dùng workspace_mutate v�
 
 Unit/store tests cho draft/error/receipt; SQL tests cho invariant/RLS/transaction; cloud E2E nhiều session cho race/realtime/timeout; keyboard/axe cho UI mới. G1 chỉ hoàn thành khi có kết quả, ngày/môi trường và giới hạn ghi rõ.
 
-## 8. Lát cắt triển khai tiếp theo
+## 8. Lát cắt G1 đã triển khai và nghiệm thu còn mở
 
 1. Migration settings/version và snapshot/update API, SettingsView; giữ tương thích danh sách/member hiện có.
 2. Transfer/leave + invariant + receipt/audit; kiểm thử race và mất response.
@@ -158,4 +162,4 @@ Unit/store tests cho draft/error/receipt; SQL tests cho invariant/RLS/transactio
 4. Timezone nhất quán, invalidation workspace và account recovery QA.
 5. Chạy nghiệm thu G1, cập nhật tài liệu và chia commit theo trạng thái code/schema/test nhất quán.
 
-G2–G5 còn cần thiết kế kỹ thuật cụ thể khi tới mốc, nhưng các quy tắc sản phẩm mục 2–5 là đầu vào chung. Không tự triển khai Admin, Guest, hard delete hoặc deployment trong G1.
+G2 đã triển khai theo mục 5; G3 có hợp đồng query/saved filters trong báo cáo G3. G4–G5 còn cần thiết kế kỹ thuật cụ thể khi tới mốc; các quy tắc sản phẩm mục 2–5 là đầu vào chung. Không tự triển khai Admin, Guest, hard delete hoặc deployment.
