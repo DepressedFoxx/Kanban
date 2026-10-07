@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import RefreshButton from '@/components/RefreshButton.vue'
 import { computed, reactive, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { RouterLink, useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import PageHeader from '@/components/PageHeader.vue'
+import ServerPagination from '@/components/ServerPagination.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -101,7 +103,7 @@ watch(
       const parsed = parseQuery(route.query)
       Object.assign(form, parsed.filters)
       validation.value = ''
-      await store.load(parsed.filters, parsed.page)
+      await store.load(parsed.filters, parsed.page, false, parsed.pageSize)
     } catch {
       store.clear()
       validation.value =
@@ -128,17 +130,17 @@ const { online, label: connection } = useCollab(
   () => store.load(store.filters, store.page, true),
   () => auth.authenticated && !validation.value,
 )
-async function apply(page = 1) {
+async function apply(page = 1, pageSize = store.pageSize) {
   if (locked.value) return
   try {
     const next = filtersSchema.parse(form)
     validation.value = ''
-    const query = filtersQuery(next, page)
+    const query = filtersQuery(next, page, pageSize)
     if (
       router.resolve({ path: myTasksConfig.path, query }).fullPath ===
       route.fullPath
     )
-      await store.load(next, page)
+      await store.load(next, page, false, pageSize)
     else await router.replace({ path: myTasksConfig.path, query })
   } catch (cause) {
     validation.value = myTasksError(cause)
@@ -227,7 +229,7 @@ function taskTarget(task: { id: string; board_id: string }) {
       task: task.id,
       returnTo: router.resolve({
         path: myTasksConfig.path,
-        query: filtersQuery(store.filters, store.page),
+        query: filtersQuery(store.filters, store.page, store.pageSize),
       }).fullPath,
     },
   }
@@ -252,13 +254,13 @@ const missingScope = computed(() =>
       title="Công việc của tôi"
       description="Việc được giao cho bạn trong các workspace đang hoạt động. Ngày hạn tính theo timezone từng workspace."
     >
-      <Button
+      <RefreshButton
         variant="outline"
         class="transition-none"
         :disabled="store.loading || store.refreshing || locked || !online"
         @click="store.load(store.filters, store.page, true)"
-        >Tải lại danh sách</Button
-      >
+        label="Tải lại danh sách"
+      />
     </PageHeader>
     <p class="my-3 text-xs text-muted-foreground" role="status">
       {{ online ? connection : 'Đang offline — kết nối lại để cập nhật.'
@@ -474,7 +476,7 @@ const missingScope = computed(() =>
     <template v-if="store.result">
       <p class="my-4 text-sm" role="status">
         {{ store.result.total }} công việc · Trang {{ store.page }}/{{
-          Math.max(1, Math.ceil(store.result.total / myTasksConfig.pageSize))
+          Math.max(1, Math.ceil(store.result.total / store.pageSize))
         }}
       </p>
       <section
@@ -528,24 +530,14 @@ const missingScope = computed(() =>
           </p>
         </li>
       </ul>
-      <nav aria-label="Phân trang công việc" class="mt-5 flex flex-wrap gap-2">
-        <Button
-          variant="outline"
-          :disabled="store.page <= 1 || locked || !online || unapplied"
-          @click="apply(store.page - 1)"
-          >Trang trước</Button
-        ><Button
-          variant="outline"
-          :disabled="
-            store.page * myTasksConfig.pageSize >= store.result.total ||
-            unapplied ||
-            locked ||
-            !online
-          "
-          @click="apply(store.page + 1)"
-          >Trang sau</Button
-        >
-      </nav>
+      <ServerPagination
+        :page="store.page"
+        :page-size="store.pageSize"
+        :total="store.result.total"
+        :disabled="locked || store.loading || !online || unapplied"
+        label="Phân trang công việc"
+        @change="apply"
+      />
     </template>
     <AlertDialog
       :open="remove"

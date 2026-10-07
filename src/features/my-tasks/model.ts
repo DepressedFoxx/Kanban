@@ -93,18 +93,22 @@ export type FilterMutation = {
   name: string
   filters: TaskFilters
 }
-export function filtersQuery(filters: TaskFilters, page = 1) {
+export function filtersQuery(filters: TaskFilters, page = 1, pageSize = 20) {
   return Object.fromEntries([
     ...Object.entries(filters).filter(([, v]) => v !== ''),
     ['page', String(page)],
+    ['pageSize', String(pageSize)],
   ])
 }
 export function parseQuery(query: Record<string, unknown>) {
-  const { page = '1', ...rest } = query
+  const { page = '1', pageSize = '20', ...rest } = query
+  const size = Number(pageSize)
+  if (typeof pageSize !== 'string' || ![10, 20, 50].includes(size))
+    throw Error('Kích thước trang không hợp lệ.')
   const n = typeof page === 'string' && /^\d+$/.test(page) ? Number(page) : NaN
   if (!Number.isInteger(n) || n < 1 || n > 100000)
     throw Error('Trang không hợp lệ.')
-  return { filters: filtersSchema.parse(rest), page: n }
+  return { filters: filtersSchema.parse(rest), page: n, pageSize: size }
 }
 export function isMyTasksPath(path: unknown): boolean {
   if (typeof path !== 'string' || path.length > 2500) return false

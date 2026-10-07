@@ -16,12 +16,16 @@ async function rpc(name: string, args: Record<string, unknown>) {
   return data
 }
 export const myTasksApi = {
-  query: async (filters: TaskFilters, page: number) =>
+  query: async (
+    filters: TaskFilters,
+    page: number,
+    pageSize: number = myTasksConfig.pageSize,
+  ) =>
     resultSchema.parse(
       await rpc('my_tasks_query', {
         p_filters: filters,
         p_page: page,
-        p_limit: myTasksConfig.pageSize,
+        p_limit: pageSize,
       }),
     ),
   mutate: async (m: FilterMutation) =>

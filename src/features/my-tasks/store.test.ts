@@ -103,7 +103,11 @@ it('roundtrips allowlisted filters and blocks arbitrary redirects', () => {
     search: 'a & b',
     view: 'today' as const,
   }
-  expect(parseQuery(filtersQuery(filters, 2))).toEqual({ filters, page: 2 })
+  expect(parseQuery(filtersQuery(filters, 2))).toEqual({
+    filters,
+    page: 2,
+    pageSize: 20,
+  })
   const path = '/my-tasks?' + new URLSearchParams(filtersQuery(filters, 2))
   expect(isMyTasksPath(path)).toBe(true)
   expect(safeRedirect(path)).toBe(path)

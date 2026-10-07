@@ -17,7 +17,8 @@ import {
 export const useMyTasksStore = defineStore('my-tasks', () => {
   const result = ref<TaskResults | null>(null),
     filters = ref<TaskFilters>(defaultFilters()),
-    page = ref(1)
+    page = ref(1),
+    pageSize = ref(20)
   const loading = ref(false),
     refreshing = ref(false),
     pending = ref(false),
@@ -34,6 +35,7 @@ export const useMyTasksStore = defineStore('my-tasks', () => {
     result.value = null
     filters.value = defaultFilters()
     page.value = 1
+    pageSize.value = 20
     loading.value = false
     refreshing.value = false
     pending.value = false
@@ -47,6 +49,7 @@ export const useMyTasksStore = defineStore('my-tasks', () => {
     next: TaskFilters = filters.value,
     nextPage = page.value,
     background = false,
+    nextPageSize = pageSize.value,
   ) {
     if (
       background &&
@@ -61,10 +64,12 @@ export const useMyTasksStore = defineStore('my-tasks', () => {
     try {
       filters.value = filtersSchema.parse(next)
       page.value = nextPage
-      const data = await myTasksApi.query(filters.value, nextPage)
+      pageSize.value = nextPageSize
+      const data = await myTasksApi.query(filters.value, nextPage, nextPageSize)
       if (generation !== readGeneration) return false
       result.value = data
       page.value = data.page
+      pageSize.value = data.limit
       lastSyncedAt.value = new Date().toISOString()
       return true
     } catch (cause) {
@@ -122,6 +127,7 @@ export const useMyTasksStore = defineStore('my-tasks', () => {
     result,
     filters,
     page,
+    pageSize,
     loading,
     refreshing,
     pending,
