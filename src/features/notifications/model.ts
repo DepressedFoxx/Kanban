@@ -29,6 +29,9 @@ export const itemSchema = z.object({
   version: z.number().int(),
 })
 export const feedSchema = z.object({
+  page: z.number().int().positive().default(1),
+  pageSize: z.number().int().positive().default(20),
+  total: z.number().int().nonnegative().default(0),
   items: z.array(itemSchema),
   unread: z.number().int(),
   high_water: z.string(),

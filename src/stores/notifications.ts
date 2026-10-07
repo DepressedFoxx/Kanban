@@ -19,6 +19,8 @@ export const useNotificationsStore = defineStore('notifications', () => {
     writeError = ref(''),
     notice = ref('')
   const uncertain = ref<Mutation | null>(null)
+  const page = ref(1),
+    pageSize = ref(20)
   let readGeneration = 0,
     writeGeneration = 0
   function clear() {
@@ -26,6 +28,8 @@ export const useNotificationsStore = defineStore('notifications', () => {
     writeGeneration++
     feed.value = null
     before.value = null
+    page.value = 1
+    pageSize.value = 20
     unreadOnly.value = false
     loading.value = false
     refreshing.value = false
@@ -40,6 +44,8 @@ export const useNotificationsStore = defineStore('notifications', () => {
     cursor = before.value,
     unread = unreadOnly.value,
     background = false,
+    nextPage = page.value,
+    nextSize = pageSize.value,
   ) {
     if (
       background &&
@@ -54,9 +60,11 @@ export const useNotificationsStore = defineStore('notifications', () => {
     refreshing.value = background
     error.value = ''
     try {
-      const result = await notificationsApi.feed(cursor, unread)
+      const result = await notificationsApi.feed(nextPage, unread, nextSize)
       if (generation !== readGeneration) return false
       feed.value = result
+      page.value = result.page
+      pageSize.value = result.pageSize
       revision.value++
       return true
     } catch (cause) {
@@ -123,6 +131,8 @@ export const useNotificationsStore = defineStore('notifications', () => {
   }
   return {
     feed,
+    page,
+    pageSize,
     before,
     unreadOnly,
     revision,

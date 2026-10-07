@@ -16,12 +16,12 @@ async function rpc(name: string, args: Record<string, unknown>) {
   return data
 }
 export const notificationsApi = {
-  feed: async (before: string | null, unread: boolean) =>
+  feed: async (page: number, unread: boolean, pageSize = 20) =>
     feedSchema.parse(
-      await rpc('notification_feed', {
-        p_before: before,
+      await rpc('notification_page', {
+        p_page: page,
         p_unread: unread,
-        p_limit: notificationConfig.pageSize,
+        p_page_size: pageSize,
       }),
     ),
   watch: async (task: string) =>

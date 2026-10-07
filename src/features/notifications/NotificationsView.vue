@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import RefreshButton from '@/components/RefreshButton.vue'
 import { computed, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
+import ServerPagination from '@/components/ServerPagination.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import { Button } from '@/components/ui/button'
 import {
@@ -23,7 +25,7 @@ const store = useNotificationsStore(),
   dirty = ref(false),
   invitation = ref<Notification | null>(null)
 const locked = computed(() => store.pending || !!store.uncertain)
-const cursors = ref<(string | null)[]>([])
+
 watch(
   () => store.feed?.preferences,
   (p) => {
@@ -52,7 +54,7 @@ watch(
       invitation.value = null
   },
 )
-void store.load(null, false)
+void store.load(null, false, false, 1)
 function togglePreference(key: keyof typeof preferenceLabels) {
   if (prefs.value) {
     prefs.value[key] = !prefs.value[key]
@@ -70,17 +72,10 @@ function resetPreferences() {
   prefs.value = store.feed ? { ...store.feed.preferences } : null
 }
 async function select(unread: boolean) {
-  cursors.value = []
-  await store.load(null, unread)
+  await store.load(null, unread, false, 1)
 }
-async function next() {
-  if (store.feed?.next) {
-    cursors.value.push(store.before)
-    await store.load(store.feed.next)
-  }
-}
-async function previous() {
-  await store.load(cursors.value.pop() ?? null)
+function changePage(page: number, size: number) {
+  return store.load(null, store.unreadOnly, false, page, size)
 }
 async function accept() {
   if (
@@ -99,12 +94,12 @@ function setInvitationOpen(open: boolean) {
       title="Thông báo"
       description="Việc được giao, bình luận đang theo dõi và lời mời workspace. Chỉ hiển thị nội dung bạn còn quyền xem."
     >
-      <Button
+      <RefreshButton
         variant="outline"
         :disabled="locked || store.loading || store.refreshing"
         @click="store.load(store.before, store.unreadOnly, true)"
-        >Tải lại thông báo</Button
-      >
+        label="Tải lại thông báo"
+      />
     </PageHeader>
     <div class="my-4 flex flex-wrap gap-2">
       <Button
@@ -186,7 +181,7 @@ function setInvitationOpen(open: boolean) {
     <template v-if="store.feed">
       <div
         v-if="!store.feed.items.length"
-        class="rounded-xl border border-dashed p-8 text-center"
+        class="rounded-xl border bg-card p-8 text-center shadow-sm"
       >
         <h2 class="font-semibold">Không có thông báo phù hợp</h2>
         <p class="mt-2 text-sm text-muted-foreground">
@@ -257,27 +252,14 @@ function setInvitationOpen(open: boolean) {
           </div>
         </li>
       </ul>
-      <nav class="mt-4 flex flex-wrap gap-2" aria-label="Phân trang thông báo">
-        <Button
-          variant="outline"
-          :disabled="locked || store.loading || !cursors.length"
-          @click="previous"
-          >Thông báo mới hơn</Button
-        >
-        <Button
-          variant="outline"
-          :disabled="locked || store.loading || !store.feed.next"
-          @click="next"
-          >Thông báo cũ hơn</Button
-        >
-        <Button
-          v-if="store.before"
-          variant="ghost"
-          :disabled="locked"
-          @click="select(store.unreadOnly)"
-          >Về thông báo mới nhất</Button
-        >
-      </nav>
+      <ServerPagination
+        :page="store.page"
+        :page-size="store.pageSize"
+        :total="store.feed.total"
+        :disabled="locked || store.loading"
+        label="Phân trang thông báo"
+        @change="changePage"
+      />
     </template>
     <AlertDialog :open="!!invitation" @update:open="setInvitationOpen"
       ><AlertDialogContent

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import RefreshButton from '@/components/RefreshButton.vue'
 import { ref, watch, onBeforeUnmount } from 'vue'
 import { Button } from '@/components/ui/button'
 import { useNotificationsStore } from '@/stores/notifications'
@@ -69,14 +70,14 @@ async function toggle() {
     <p v-if="error" class="text-sm text-destructive" role="status">
       {{ error }}
     </p>
-    <Button
+    <RefreshButton
       v-if="error"
       type="button"
       variant="ghost"
       :disabled="loading"
       @click="load"
-      >Tải lại theo dõi</Button
-    >
+      label="Tải lại theo dõi"
+    />
     <p v-if="store.writeError" role="alert" class="text-sm text-destructive">
       {{ store.writeError }}
     </p>
