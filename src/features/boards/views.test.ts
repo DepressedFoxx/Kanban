@@ -136,7 +136,7 @@ describe('online board UI', () => {
     expect(wrapper!.text()).not.toContain('Tạo công việc')
     expect(wrapper!.find('#rename-board').exists()).toBe(false)
     expect(
-      wrapper!.get(`#move-${taskId}`).attributes('disabled'),
+      wrapper!.get(`#task-actions-${taskId}`).attributes('disabled'),
     ).toBeDefined()
   })
   it('submits only the destination event for cross-column drag', async () => {

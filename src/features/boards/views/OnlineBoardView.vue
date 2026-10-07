@@ -574,6 +574,8 @@ onBeforeUnmount(() => {
               item-key="id"
               group="online-tasks"
               handle=".drag-handle"
+              filter=".task-menu-trigger"
+              :prevent-on-filter="false"
               :animation="
                 reducedMotion === 'reduce' ? 0 : appConfig.dragAnimationMs
               "
@@ -601,7 +603,12 @@ onBeforeUnmount(() => {
                     !canWrite || filtered || partial || store.refreshing
                   "
                   :read-only="!canWrite"
+                  :can-archive="canWrite"
                   @edit="edit(element)"
+                  @archive="
+                    (taskId) =>
+                      canWrite && store.mutate('archive_task', { id: taskId })
+                  "
                   @move="move" /></template
             ></draggable>
             <p

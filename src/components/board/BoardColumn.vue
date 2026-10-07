@@ -61,6 +61,8 @@ const cards = computed({
       item-key="id"
       group="tasks"
       handle=".drag-handle"
+      filter=".task-menu-trigger"
+      :prevent-on-filter="false"
       :animation="reducedMotion === 'reduce' ? 0 : appConfig.dragAnimationMs"
       :disabled="filtered"
       ghost-class="drag-ghost"

@@ -1,16 +1,25 @@
 <script setup lang="ts">
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+  DropdownMenuRoot,
+  DropdownMenuTrigger,
+  DropdownMenuPortal,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from 'reka-ui'
 import { Button } from '@/components/ui/button'
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
 import { isOverdue } from '@/features/tasks/model'
 import { labelClasses } from '@/features/tasks/productivity'
-import { CalendarDays, GripVertical } from '@lucide/vue'
+import {
+  CalendarDays,
+  Ellipsis,
+  Archive,
+  Check,
+  ArrowRight,
+  FileText,
+} from '@lucide/vue'
 import {
   columns,
   priorityLabels,
@@ -22,6 +31,7 @@ const props = defineProps<{
   task: Task
   dragDisabled: boolean
   readOnly?: boolean
+  canArchive?: boolean
   timezone?: string
   archived?: boolean
   labels?: { id: string; name: string; color: string }[]
@@ -47,7 +57,17 @@ const overdue = computed(() =>
 const emit = defineEmits<{
   edit: [task: Task]
   move: [id: string, status: Status]
+  archive: [id: string]
 }>()
+const menuItemClass =
+  'flex min-h-11 cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0'
+function moveTo(status: Status) {
+  if (!props.readOnly && status !== props.task.status)
+    emit('move', props.task.id, status)
+}
+function archiveTask() {
+  if (props.canArchive && !props.readOnly) emit('archive', props.task.id)
+}
 </script>
 
 <template>
@@ -66,16 +86,82 @@ const emit = defineEmits<{
         checklist.length
       }}
     </p>
-    <div class="mb-3 flex items-center justify-between gap-2">
+    <div
+      class="task-card-header mb-3 flex min-h-11 items-center justify-between gap-2"
+      :class="{ 'drag-handle': !dragDisabled && !readOnly }"
+      :title="
+        !dragDisabled && !readOnly
+          ? 'Kéo phần đầu thẻ để di chuyển công việc'
+          : undefined
+      "
+    >
       <span class="priority" :data-priority="task.priority">{{
         priorityLabels[task.priority]
       }}</span>
-      <span
-        v-if="!dragDisabled"
-        class="drag-handle rounded p-1 text-stone-400"
-        aria-hidden="true"
-        ><GripVertical :size="15"
-      /></span>
+      <div class="flex items-center gap-1">
+        <DropdownMenuRoot>
+          <DropdownMenuTrigger as-child>
+            <Button
+              :id="`task-actions-${task.id}`"
+              type="button"
+              variant="ghost"
+              size="icon"
+              class="task-menu-trigger cursor-pointer"
+              :disabled="readOnly"
+              :aria-label="`Thao tác: ${task.title}`"
+              title="Thao tác công việc"
+              @pointerdown.stop
+              @click.stop
+              ><Ellipsis aria-hidden="true"
+            /></Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuPortal>
+            <DropdownMenuContent
+              align="end"
+              :side-offset="6"
+              class="z-50 w-64 max-w-[calc(100vw-2rem)] max-h-[var(--reka-dropdown-menu-content-available-height)] overflow-y-auto rounded-lg border bg-popover p-1 text-popover-foreground shadow-lg"
+            >
+              <DropdownMenuItem
+                :class="menuItemClass"
+                @select="emit('edit', task)"
+                ><FileText aria-hidden="true" />Mở chi tiết</DropdownMenuItem
+              >
+              <DropdownMenuSeparator class="my-1 h-px bg-border" />
+              <DropdownMenuLabel
+                class="px-3 py-2 text-xs font-medium text-muted-foreground"
+                >Chuyển trạng thái</DropdownMenuLabel
+              >
+              <DropdownMenuItem
+                v-for="column in columns"
+                :key="column.id"
+                :class="menuItemClass"
+                :disabled="readOnly || task.status === column.id"
+                :aria-label="
+                  task.status === column.id
+                    ? `${column.label} (hiện tại)`
+                    : `Chuyển sang ${column.label}`
+                "
+                @select="moveTo(column.id)"
+              >
+                <Check
+                  v-if="task.status === column.id"
+                  aria-hidden="true"
+                /><ArrowRight v-else aria-hidden="true" />{{ column.label }}
+              </DropdownMenuItem>
+              <template v-if="canArchive">
+                <DropdownMenuSeparator class="my-1 h-px bg-border" />
+                <DropdownMenuItem
+                  :class="menuItemClass"
+                  :disabled="readOnly"
+                  @select="archiveTask"
+                  ><Archive aria-hidden="true" />Lưu trữ công
+                  việc</DropdownMenuItem
+                >
+              </template>
+            </DropdownMenuContent>
+          </DropdownMenuPortal>
+        </DropdownMenuRoot>
+      </div>
     </div>
     <Button
       variant="ghost"
@@ -106,23 +192,5 @@ const emit = defineEmits<{
     <p v-if="overdue" class="mt-3 text-xs font-medium text-destructive">
       Quá hạn · {{ task.dueDate }}
     </p>
-    <label class="sr-only" :for="`move-${task.id}`"
-      >Chuyển trạng thái: {{ task.title }}</label
-    >
-    <Select
-      :disabled="readOnly"
-      :model-value="task.status"
-      @update:model-value="emit('move', task.id, $event as Status)"
-      ><SelectTrigger :id="`move-${task.id}`" class="mt-3 w-full text-xs"
-        ><SelectValue /></SelectTrigger
-      ><SelectContent
-        ><SelectItem
-          v-for="column in columns"
-          :key="column.id"
-          :value="column.id"
-          >{{ column.label }}</SelectItem
-        ></SelectContent
-      ></Select
-    >
   </article>
 </template>
