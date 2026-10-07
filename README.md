@@ -107,6 +107,8 @@ Module Supabase Auth: xem [thiết lập và kiểm thử](docs/auth.md). Cần 
 
 ## Board online trong workspace
 
+Phân trang/lọc server, component dùng chung và quy tắc icon/control: [docs/server-pagination.md](docs/server-pagination.md).
+
 Module board/task đã lưu trên Supabase với phân quyền, lưu trữ/khôi phục, kiểm soát phiên bản và retry an toàn. Xem [setup, kiến trúc và kiểm thử board](docs/boards.md). Mở Workspace & board để bắt đầu. Board cá nhân local được giữ tại `/personal-board`; `/board` chuyển về danh sách workspace. Đã có realtime/comment/activity.
 
 ## Task chi tiết
