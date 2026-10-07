@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
+import { ArrowRight } from '@lucide/vue'
 import PageHeader from '@/components/PageHeader.vue'
 </script>
 <template>
@@ -57,7 +58,7 @@ import PageHeader from '@/components/PageHeader.vue'
     <RouterLink
       to="/workspaces"
       class="mt-8 inline-block text-primary underline"
-      >Mở workspace →</RouterLink
-    >
+      >Mở workspace <ArrowRight class="ml-1 inline size-4" aria-hidden="true"
+    /></RouterLink>
   </main>
 </template>

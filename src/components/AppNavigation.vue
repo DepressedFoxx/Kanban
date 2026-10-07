@@ -13,6 +13,7 @@ import { authConfig } from '@/features/auth/config'
 import { workspaceConfig } from '@/features/workspaces/config'
 import { useAuthStore } from '@/stores/auth'
 const route = useRoute()
+defineProps<{ hideAccount?: boolean }>()
 const auth = useAuthStore()
 const notifications = useNotificationsStore()
 const emit = defineEmits<{ navigate: [] }>()
@@ -71,7 +72,7 @@ const emit = defineEmits<{ navigate: [] }>()
       dẫn</RouterLink
     >
     <RouterLink
-      v-if="auth.authenticated"
+      v-if="auth.authenticated && !hideAccount"
       :to="authConfig.routes.account"
       class="nav-link"
       @click="emit('navigate')"

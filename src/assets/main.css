@@ -195,14 +195,6 @@ button:disabled {
     font-size: 16px;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    transition-duration: 0.01ms !important;
-    animation-duration: 0.01ms !important;
-  }
-}
 
 /* Shared controls, including native fields disabled through a parent fieldset. */
 [data-slot='input'],
@@ -393,7 +385,7 @@ button:disabled {
   }
 }
 @media (max-width: 479px) {
-  .page-heading-actions > * {
+  .page-heading-actions > :not([data-size^='icon']) {
     flex: 1;
   }
   .header-account > a {
@@ -494,11 +486,28 @@ button:disabled {
     grid-template-rows: auto minmax(0, 1fr);
   }
 }
-@media (pointer: coarse) {
+[data-slot='dialog-close'] {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  top: 8px;
+  right: 8px;
+}
+[data-slot='dialog-content'] > [data-slot='dialog-header'] {
+  padding-inline: 28px;
+}
+@media (any-pointer: coarse), (max-width: 767px) {
+  /* Match text fields to touch-sized buttons and select triggers. */
+  [data-slot='input'] {
+    min-height: 44px;
+  }
+  button,
   [data-slot='button'],
   [data-slot='select-trigger'],
   .nav-link {
     min-height: 44px;
+    min-width: 44px;
   }
   [data-slot='dialog-close'] {
     min-width: 44px;
@@ -511,6 +520,28 @@ button:disabled {
   input,
   textarea {
     font-size: 16px;
+  }
+}
+
+/* Reduced motion keeps state feedback, without drawer travel or modal zoom. */
+@media (prefers-reduced-motion: reduce) {
+  .navigation-drawer[data-state],
+  [data-slot='dialog-content'],
+  [data-slot='alert-dialog-content'],
+  [data-slot='select-content'],
+  .account-menu {
+    animation: none !important;
+    transition-property: color, background-color, border-color, opacity;
+  }
+  .navigation-backdrop[data-state='open'] {
+    animation: drawer-backdrop-enter 80ms linear both;
+  }
+  .navigation-backdrop[data-state='closed'] {
+    animation: drawer-backdrop-leave 80ms linear both;
+  }
+  [data-slot='button'],
+  .nav-link {
+    transition-property: color, background-color, border-color, box-shadow;
   }
 }
 .task-actions {

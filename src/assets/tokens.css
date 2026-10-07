@@ -19,6 +19,8 @@
   --accent: #eff6ff;
   --accent-foreground: #1d4ed8;
   --destructive: #b42335;
+  --warning: #78350f;
+  --warning-background: #fffbeb;
   --input: #8393ad;
   --popover: #ffffff;
   --popover-foreground: #0f172a;
@@ -64,6 +66,8 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-warning: var(--warning);
+  --color-warning-background: var(--warning-background);
   --color-input: var(--input);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
