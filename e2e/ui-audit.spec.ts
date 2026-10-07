@@ -90,9 +90,7 @@ test('main screens keep controls separated at mobile tablet and desktop widths',
         const links = nav.getByRole('link')
         const a = await links.nth(0).boundingBox(),
           b = await links.nth(1).boundingBox()
-        expect(
-          Math.max(b!.x - a!.x - a!.width, b!.y - a!.y - a!.height),
-        ).toBeGreaterThanOrEqual(12)
+        expect(b!.y - a!.y - a!.height).toBeGreaterThanOrEqual(12)
         if (width === 604)
           await page.screenshot({
             path: 'output/playwright/boards-spacing-604.png',

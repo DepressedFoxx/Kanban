@@ -96,7 +96,10 @@ onBeforeUnmount(() => {
 </script>
 <template>
   <main class="workspace-page">
-    <nav class="page-navigation" aria-label="Điều hướng workspace">
+    <nav
+      class="page-navigation page-navigation--stacked"
+      aria-label="Điều hướng workspace"
+    >
       <RouterLink to="/workspaces" class="page-back-link"
         ><ArrowLeft class="mr-1 inline size-4" aria-hidden="true" />Đổi
         workspace</RouterLink
