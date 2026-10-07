@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { appConfig } from '@/config/app'
+import { pageTitle } from '@/config/pageTitle'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores/auth'
 import { authConfig } from '@/features/auth/config'
@@ -37,6 +38,17 @@ watch(
 const router = useRouter()
 const workspaces = useWorkspaceStore()
 const onlineBoard = useOnlineBoardStore()
+watch(
+  [() => route.path, () => onlineBoard.snapshot?.board.name],
+  () => {
+    const board = onlineBoard.snapshot?.board
+    document.title = pageTitle(
+      route.path,
+      board && board.id === route.params.boardId ? board.name : undefined,
+    )
+  },
+  { immediate: true },
+)
 const workspaceScreen = computed(
   () =>
     route.path.startsWith('/workspaces') ||
@@ -56,11 +68,15 @@ watch(
     workspaceNames.value = {}
     if (!auth.authenticated) return
     try {
-      const list = await workspaceApi.list()
+      const id = String(
+        route.params.workspaceId ||
+          onlineBoard.snapshot?.board.workspace_id ||
+          '',
+      )
+      if (!id) return
+      const workspace = await workspaceApi.get(id)
       if (request === labelRequest)
-        workspaceNames.value = Object.fromEntries(
-          list.map((w) => [w.id, w.name]),
-        )
+        workspaceNames.value = { [workspace.id]: workspace.name }
     } catch {
       /* Navigation stays usable if the workspace label cannot be loaded. */
     }
@@ -68,8 +84,8 @@ watch(
   { immediate: true },
 )
 const workspaceLabel = computed(() => {
-  if (route.path === '/notifications') return 'Thông báo'
-  if (route.path === '/my-tasks') return 'Công việc của tôi'
+  if (!route.params.workspaceId && !route.path.startsWith('/boards/'))
+    return 'Tất cả workspace'
   const id = String(
     route.params.workspaceId || onlineBoard.snapshot?.board.workspace_id || '',
   )
@@ -104,7 +120,7 @@ async function logout() {
           <p class="break-words rounded-lg bg-muted p-3 text-sm">
             {{ workspaceLabel }}
           </p>
-          <AppNavigation @navigate="menuOpen = false" />
+          <AppNavigation hide-account @navigate="menuOpen = false" />
           <div class="mt-auto grid gap-3 border-t pt-4">
             <template v-if="auth.authenticated"
               ><AccountMenu
@@ -143,12 +159,12 @@ async function logout() {
         :to="appConfig.routes.board"
         class="flex items-center gap-3 text-lg font-semibold"
         ><span
-          class="flex size-9 items-center justify-center rounded-xl bg-primary text-white"
+          class="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground"
           ><Columns3 :size="19" /></span
         >{{ appConfig.name }}<span class="text-primary">.</span></RouterLink
       >
       <div
-        class="mt-9 hidden rounded-xl border border-border bg-white p-3 lg:block"
+        class="mt-9 hidden rounded-xl border border-border bg-card p-3 lg:block"
       >
         <p class="text-xs text-muted-foreground">Không gian làm việc</p>
         <p class="mt-2 flex items-center gap-2 text-sm font-medium">

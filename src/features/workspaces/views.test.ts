@@ -7,17 +7,31 @@ import WorkspacesView from './views/WorkspacesView.vue'
 import MembersView from './views/MembersView.vue'
 const api = vi.hoisted(() => ({
   list: vi.fn(),
+  get: vi.fn(),
   members: vi.fn(),
+  memberPage: vi.fn(),
+  invitationPage: vi.fn(),
   invitations: vi.fn(),
   create: vi.fn(),
   invite: vi.fn(),
   rename: vi.fn(),
 }))
 vi.mock('./api', () => ({ workspaceApi: api }))
+vi.mock('@/lib/supabase', () => ({
+  supabase: {
+    rpc: () => ({
+      abortSignal: async () => ({
+        data: { items: [], page: 1, pageSize: 20, total: 0 },
+        error: null,
+      }),
+    }),
+  },
+}))
 const id = '10000000-0000-4000-8000-000000000001'
 let wrapper: VueWrapper | undefined
 beforeEach(() => {
   vi.resetAllMocks()
+  api.get.mockImplementation(async () => (await api.list())[0])
   api.list.mockResolvedValue([
     { id, name: 'Workspace A', role: 'owner', created_at: '2026-09-29' },
   ])
@@ -31,6 +45,18 @@ beforeEach(() => {
     },
   ])
   api.invitations.mockResolvedValue([])
+  api.memberPage.mockImplementation(async () => ({
+    items: await api.members(),
+    page: 1,
+    pageSize: 20,
+    total: 1,
+  }))
+  api.invitationPage.mockResolvedValue({
+    items: [],
+    page: 1,
+    pageSize: 20,
+    total: 0,
+  })
 })
 afterEach(() => {
   wrapper?.unmount()
@@ -57,7 +83,7 @@ describe('workspace UI', () => {
     api.create.mockResolvedValue(id)
     const router = await render()
     await wrapper!.get('#workspace-name').setValue('My team')
-    await wrapper!.get('form').trigger('submit')
+    await wrapper!.findAll('form')[1]!.trigger('submit')
     await flushPromises()
     expect(api.create).toHaveBeenCalledWith('My team')
     expect(router.currentRoute.value.path).toBe(
@@ -68,7 +94,7 @@ describe('workspace UI', () => {
     api.create.mockRejectedValue({ code: 'PGRST202' })
     await render()
     await wrapper!.get('#workspace-name').setValue('Keep draft')
-    await wrapper!.get('form').trigger('submit')
+    await wrapper!.findAll('form')[1]!.trigger('submit')
     await flushPromises()
     expect(
       (wrapper!.get('#workspace-name').element as HTMLInputElement).value,
@@ -90,7 +116,10 @@ describe('workspace UI', () => {
     api.invite.mockResolvedValue('a'.repeat(64))
     await render(true)
     await wrapper!.get('#invite-email').setValue('member@example.com')
-    await wrapper!.findAll('form')[1]!.trigger('submit')
+    await wrapper!
+      .get('#invite-email')
+      .element.closest('form')!
+      .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
     await flushPromises()
     expect(api.invite).toHaveBeenCalledWith(id, 'member@example.com', 'member')
     expect(

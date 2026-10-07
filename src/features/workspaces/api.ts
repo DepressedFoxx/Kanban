@@ -14,6 +14,40 @@ async function rpc(name: string, args: Record<string, unknown> = {}) {
   return data
 }
 export const workspaceApi = {
+  get: async (id: string) =>
+    workspaceSchema.parse(
+      await rpc('workspace_settings_get', { p_workspace: id }),
+    ),
+  memberPage: async (
+    id: string,
+    page: number,
+    pageSize: number,
+    search: string,
+  ) => {
+    const data = await rpc('app_list_query', {
+      p_source: 'members',
+      p_workspace: id,
+      p_page: page,
+      p_page_size: pageSize,
+      p_filters: { search },
+    })
+    return { ...data, items: memberSchema.array().parse(data.items) }
+  },
+  invitationPage: async (
+    id: string,
+    page: number,
+    pageSize: number,
+    search: string,
+  ) => {
+    const data = await rpc('app_list_query', {
+      p_source: 'invitations',
+      p_workspace: id,
+      p_page: page,
+      p_page_size: pageSize,
+      p_filters: { search },
+    })
+    return { ...data, items: invitationSchema.array().parse(data.items) }
+  },
   preview: async (token: string) =>
     z
       .object({

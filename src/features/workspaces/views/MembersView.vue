@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import RefreshButton from '@/components/RefreshButton.vue'
+import { Search, ArrowLeft } from '@lucide/vue'
 import PageHeader from '@/components/PageHeader.vue'
+import ServerPagination from '@/components/ServerPagination.vue'
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { Button } from '@/components/ui/button'
@@ -29,7 +32,15 @@ import { invitationStatus, type Member } from '../model'
 const route = useRoute()
 const store = useWorkspaceStore()
 const id = String(route.params.workspaceId)
-const name = ref('')
+store.paged = true
+function peoplePage(page: number, pageSize: number) {
+  Object.assign(store.peoplePage, { page, pageSize })
+  return store.load(id)
+}
+function invitesPage(page: number, pageSize: number) {
+  Object.assign(store.invitesPage, { page, pageSize })
+  return store.load(id)
+}
 const email = ref('')
 const role = ref('member')
 const invitationUrl = ref('')
@@ -44,7 +55,7 @@ const confirmOpen = computed({
 async function refresh() {
   invitationUrl.value = ''
   copyStatus.value = ''
-  if (await store.load(id)) name.value = store.current?.name ?? ''
+  await store.load(id)
 }
 onMounted(refresh)
 // Revalidate on focus and periodically; server enforces permissions on every RPC.
@@ -53,9 +64,7 @@ const timer = window.setInterval(() => {
 }, 30000)
 async function revalidate() {
   if (store.pending || store.loading) return
-  const oldName = store.current?.name
   await store.load(id)
-  if (name.value === oldName) name.value = store.current?.name ?? ''
   if (!store.owner) {
     invitationUrl.value = ''
     removing.value = null
@@ -70,12 +79,6 @@ onBeforeUnmount(() => {
   window.removeEventListener('focus', focus)
   store.clear()
 })
-async function rename() {
-  if (await store.mutate(() => workspaceApi.rename(id, name.value))) {
-    await refresh()
-    store.notice = 'Đã đổi tên workspace.'
-  }
-}
 async function invite() {
   invitationUrl.value = ''
   copyStatus.value = ''
@@ -128,34 +131,40 @@ async function revoke(invitation: string) {
 </script>
 <template>
   <main class="workspace-page">
-    <Button as-child variant="outline"
-      ><RouterLink :to="`/workspaces/${id}/settings`"
-        >Cài đặt workspace</RouterLink
-      ></Button
+    <nav
+      class="mb-4 flex flex-wrap items-center gap-3"
+      aria-label="Điều hướng workspace"
     >
+      <Button as-child variant="outline"
+        ><RouterLink :to="`/workspaces/${id}/settings`"
+          >Cài đặt workspace</RouterLink
+        ></Button
+      >
+      <Button as-child variant="outline"
+        ><RouterLink :to="`/workspaces/${id}/boards`"
+          >Board của workspace</RouterLink
+        ></Button
+      >
+      <RouterLink
+        :to="workspaceConfig.listPath"
+        class="text-sm text-primary underline"
+        ><ArrowLeft class="mr-1 inline size-4" aria-hidden="true" />Đổi
+        workspace</RouterLink
+      >
+    </nav>
     <p v-if="store.current?.archived_at" role="status" class="mt-4">
       Workspace đã lưu trữ. Không thể mời hoặc đổi vai trò; Owner vẫn có thể gỡ
       thành viên và thu hồi lời mời.
     </p>
-    <Button as-child variant="outline" class="mb-4 mr-4"
-      ><RouterLink :to="`/workspaces/${id}/boards`"
-        >Board của workspace</RouterLink
-      ></Button
-    >
-    <RouterLink
-      :to="workspaceConfig.listPath"
-      class="text-sm text-primary underline"
-      >← Đổi workspace</RouterLink
-    >
     <PageHeader title="Thành viên" :description="store.current?.name">
-      <Button
+      <RefreshButton
         variant="outline"
         :disabled="store.loading || store.pending"
         @click="refresh"
-        >Tải lại</Button
-      >
+        label="Tải lại"
+      />
     </PageHeader>
-    <p v-if="store.loading" role="status" class="mt-5">
+    <p v-if="store.loading && !store.current" role="status" class="mt-5">
       Đang kiểm tra quyền truy cập…
     </p>
     <p
@@ -173,28 +182,27 @@ async function revoke(invitation: string) {
         Vai trò của bạn: {{ roleLabels[store.current.role] }}. Chỉ Owner được
         quản lý thành viên và lời mời.
       </p>
-      <form
-        v-if="store.owner && !store.current?.archived_at"
-        class="mt-6 flex flex-wrap items-end gap-3 rounded-xl border bg-card p-5"
-        @submit.prevent="rename"
-      >
-        <div class="field min-w-0 flex-1">
-          <Label for="rename-workspace">Tên workspace</Label
-          ><Input
-            id="rename-workspace"
-            v-model="name"
-            :maxlength="workspaceConfig.nameMaxLength"
-            required
-          />
-        </div>
-        <Button type="submit" :disabled="store.pending || !name.trim()"
-          >Lưu tên</Button
-        >
-      </form>
       <section class="mt-6">
         <h2 class="text-lg font-semibold">
-          Thành viên ({{ store.members.length }})
+          Thành viên ({{ store.peoplePage.total }})
         </h2>
+        <form
+          class="my-3 flex gap-2"
+          @submit.prevent="peoplePage(1, store.peoplePage.pageSize)"
+        >
+          <Input
+            v-model="store.peoplePage.search"
+            aria-label="Tìm thành viên"
+            placeholder="Tìm thành viên…"
+          /><Button
+            type="submit"
+            size="icon"
+            aria-label="Tìm thành viên"
+            title="Tìm thành viên"
+            :disabled="store.loading"
+            ><Search aria-hidden="true"
+          /></Button>
+        </form>
         <ul class="mt-3 divide-y rounded-xl border bg-card">
           <li
             v-for="member in store.members"
@@ -238,6 +246,14 @@ async function revoke(invitation: string) {
             </div>
           </li>
         </ul>
+        <ServerPagination
+          :page="store.peoplePage.page"
+          :page-size="store.peoplePage.pageSize"
+          :total="store.peoplePage.total"
+          :disabled="store.loading || store.pending"
+          label="Phân trang thành viên"
+          @change="peoplePage"
+        />
       </section>
       <section v-if="store.owner" class="mt-6 rounded-xl border bg-card p-5">
         <h2 class="text-lg font-semibold">Mời thành viên</h2>
@@ -294,6 +310,23 @@ async function revoke(invitation: string) {
           Tạo lại lời mời cho cùng email sẽ vô hiệu hóa link cũ. Khi dùng chung,
           ứng dụng phải được triển khai trên địa chỉ người nhận truy cập được.
         </p>
+        <form
+          class="my-3 flex gap-2"
+          @submit.prevent="invitesPage(1, store.invitesPage.pageSize)"
+        >
+          <Input
+            v-model="store.invitesPage.search"
+            aria-label="Tìm lời mời"
+            placeholder="Tìm email lời mời…"
+          /><Button
+            type="submit"
+            size="icon"
+            aria-label="Tìm lời mời"
+            title="Tìm lời mời"
+            :disabled="store.loading"
+            ><Search aria-hidden="true"
+          /></Button>
+        </form>
         <ul class="mt-5 divide-y">
           <li
             v-for="invitation in store.invitations"
@@ -318,6 +351,14 @@ async function revoke(invitation: string) {
             >
           </li>
         </ul>
+        <ServerPagination
+          :page="store.invitesPage.page"
+          :page-size="store.invitesPage.pageSize"
+          :total="store.invitesPage.total"
+          :disabled="store.loading || store.pending"
+          label="Phân trang lời mời"
+          @change="invitesPage"
+        />
       </section>
       <p class="mt-6 text-sm text-muted-foreground">
         Board của workspace lưu trên Supabase. Mở danh sách board để quản lý

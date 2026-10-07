@@ -21,7 +21,7 @@ beforeEach(() => {
   vi.resetAllMocks()
   setActivePinia(createPinia())
   api.get.mockResolvedValue(data)
-  api.activity.mockResolvedValue([])
+  api.activity.mockResolvedValue({ items: [], page: 1, pageSize: 20, total: 0 })
 })
 it('uncertain write keeps detached payload and repeats exact receipt', async () => {
   const store = useWorkspaceSettingsStore()

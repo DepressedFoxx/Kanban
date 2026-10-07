@@ -23,6 +23,7 @@ export const useWorkspaceSettingsStore = defineStore(
       notice = ref(''),
       uncertain = ref<SettingsMutation | null>(null)
     const more = ref(false)
+    const activityPage = ref({ page: 1, pageSize: 20, total: 0 })
     let generation = 0
     const owner = computed(() => snapshot.value?.role === 'owner')
     function clear() {
@@ -35,6 +36,7 @@ export const useWorkspaceSettingsStore = defineStore(
       notice.value = ''
       uncertain.value = null
       more.value = false
+      activityPage.value = { page: 1, pageSize: 20, total: 0 }
     }
     async function load(id: string) {
       if (pending.value || loading.value || uncertain.value) return false
@@ -47,11 +49,21 @@ export const useWorkspaceSettingsStore = defineStore(
       try {
         const value = await settingsApi.get(id)
         const logs =
-          value.role === 'owner' ? await settingsApi.activity(id) : []
+          value.role === 'owner'
+            ? await settingsApi.activity(
+                id,
+                activityPage.value.page,
+                activityPage.value.pageSize,
+              )
+            : { items: [], page: 1, pageSize: 20, total: 0 }
         if (current !== generation) return false
         snapshot.value = value
-        activity.value = logs
-        more.value = logs.length === 50
+        activity.value = logs.items
+        activityPage.value = {
+          page: logs.page,
+          pageSize: logs.pageSize,
+          total: logs.total,
+        }
         error.value = ''
         return true
       } catch (cause) {
@@ -119,19 +131,33 @@ export const useWorkspaceSettingsStore = defineStore(
     async function retry() {
       return uncertain.value ? send(uncertain.value) : false
     }
-    async function older() {
-      if (!snapshot.value || !owner.value || loading.value || !more.value)
+    async function older(
+      page = activityPage.value.page + 1,
+      pageSize = activityPage.value.pageSize,
+    ) {
+      if (
+        !snapshot.value ||
+        !owner.value ||
+        loading.value ||
+        pending.value ||
+        uncertain.value
+      )
         return
       const current = generation
       loading.value = true
       try {
         const rows = await settingsApi.activity(
           snapshot.value.id,
-          activity.value.at(-1)?.id,
+          page,
+          pageSize,
         )
         if (current === generation) {
-          activity.value.push(...rows)
-          more.value = rows.length === 50
+          activity.value = rows.items
+          activityPage.value = {
+            page: rows.page,
+            pageSize: rows.pageSize,
+            total: rows.total,
+          }
         }
       } catch (cause) {
         if (current === generation) error.value = workspaceError(cause)
@@ -140,6 +166,7 @@ export const useWorkspaceSettingsStore = defineStore(
       }
     }
     return {
+      activityPage,
       snapshot,
       activity,
       loading,

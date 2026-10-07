@@ -40,14 +40,22 @@ export const settingsApi = {
     settingsSchema.parse(
       await rpc('workspace_settings_get', { p_workspace: id }),
     ),
-  activity: async (id: string, before?: string) =>
-    activitySchema.array().parse(
-      await rpc('workspace_activity_list', {
-        p_workspace: id,
-        p_before: before ?? null,
-        p_limit: 50,
-      }),
-    ),
+  activity: async (id: string, page = 1, pageSize = 20) =>
+    z
+      .object({
+        items: activitySchema.array(),
+        page: z.number().int().positive(),
+        pageSize: z.number().int().min(1).max(50),
+        total: z.number().int().nonnegative(),
+      })
+      .parse(
+        await rpc('activity_page', {
+          p_source: 'workspace_activity',
+          p_workspace: id,
+          p_page: page,
+          p_page_size: pageSize,
+        }),
+      ),
   mutate: async (m: SettingsMutation) => {
     const result = await rpc('workspace_mutate', {
       p_workspace: m.workspace,

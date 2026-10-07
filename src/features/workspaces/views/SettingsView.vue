@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import RefreshButton from '@/components/RefreshButton.vue'
+import ServerPagination from '@/components/ServerPagination.vue'
+import { ArrowLeft } from '@lucide/vue'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { RouterLink, onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
@@ -232,17 +235,19 @@ const labels: Record<string, string> = {
 <template>
   <main class="workspace-page">
     <RouterLink to="/workspaces" class="text-sm text-primary"
-      >← Workspace</RouterLink
+      ><ArrowLeft
+        class="mr-1 inline size-4"
+        aria-hidden="true"
+      />Workspace</RouterLink
     >
     <PageHeader title="Cài đặt workspace" :description="store.snapshot?.name"
-      ><Button
+      ><RefreshButton
         variant="outline"
         class="transition-none"
         :disabled="disabled || store.loading"
         @click="store.load(id)"
-        >Tải lại</Button
-      ></PageHeader
-    >
+        label="Tải lại"
+    /></PageHeader>
     <p v-if="store.error" role="alert" class="mt-4 text-destructive">
       {{ store.error }}
     </p>
@@ -258,7 +263,6 @@ const labels: Record<string, string> = {
       >Xác nhận lại thao tác</Button
     >
     <template v-if="store.snapshot">
-      <WorkspaceExport v-if="store.owner" :workspace="id" />
       <p
         v-if="store.snapshot.archived_at"
         role="status"
@@ -334,6 +338,7 @@ const labels: Record<string, string> = {
           >Lưu cài đặt</Button
         >
       </form>
+      <WorkspaceExport v-if="store.owner" :workspace="id" />
       <section class="surface-panel mt-6 max-w-2xl">
         <h2 class="text-lg font-semibold">Quyền sở hữu và vòng đời</h2>
         <div class="mt-4 flex flex-wrap gap-3">
@@ -390,14 +395,14 @@ const labels: Record<string, string> = {
             </p>
           </li>
         </ol>
-        <Button
-          v-if="store.more"
-          variant="outline"
-          :disabled="store.loading"
-          class="mt-3"
-          @click="store.older"
-          >Hoạt động cũ hơn</Button
-        >
+        <ServerPagination
+          :page="store.activityPage.page"
+          :page-size="store.activityPage.pageSize"
+          :total="store.activityPage.total"
+          :disabled="store.loading || store.pending || !!store.uncertain"
+          label="Phân trang hoạt động workspace"
+          @change="store.older"
+        />
       </section>
     </template>
     <AlertDialog :open="!!action" @update:open="closeConfirmation"

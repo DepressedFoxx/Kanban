@@ -1,6 +1,11 @@
 <script setup lang="ts">
+import RefreshButton from '@/components/RefreshButton.vue'
+import { Search, ArrowRight } from '@lucide/vue'
 import PageHeader from '@/components/PageHeader.vue'
-import { computed, onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
+import ServerPagination from '@/components/ServerPagination.vue'
+import { useServerList } from '@/lib/useServerList'
+import { workspaceSchema } from '../model'
 import { RouterLink, useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,10 +17,23 @@ const store = useWorkspaceStore()
 const router = useRouter()
 const name = ref('')
 const archived = ref(false)
-const shown = computed(() =>
-  store.workspaces.filter((w) => Boolean(w.archived_at) === archived.value),
-)
-onMounted(() => store.load())
+const {
+  items: shown,
+  page,
+  pageSize,
+  total,
+  filters,
+  loading,
+  error,
+  load,
+} = useServerList('workspaces', workspaceSchema)
+const search = ref('')
+function refresh() {
+  filters.value = { archived: archived.value, search: search.value }
+  return load(1)
+}
+watch(archived, refresh)
+onMounted(refresh)
 async function create() {
   const result = await store.mutate(() => workspaceApi.create(name.value))
   if (result) await router.push(workspaceConfig.detailPath(result.value))
@@ -27,13 +45,28 @@ async function create() {
       title="Workspace của bạn"
       description="Tạo không gian riêng và mời thành viên cùng tham gia."
     >
-      <Button
+      <RefreshButton
         variant="outline"
-        :disabled="store.loading || store.pending"
-        @click="store.load()"
-        >Tải lại</Button
-      >
+        :disabled="loading || store.pending"
+        @click="refresh"
+        label="Tải lại"
+      />
     </PageHeader>
+    <form class="my-4 flex items-center gap-2" @submit.prevent="refresh">
+      <Input
+        v-model="search"
+        aria-label="Tìm workspace"
+        placeholder="Tìm workspace…"
+      /><Button
+        type="submit"
+        size="icon"
+        aria-label="Tìm workspace"
+        title="Tìm workspace"
+        :disabled="loading"
+        ><Search aria-hidden="true"
+      /></Button>
+    </form>
+    <p v-if="error" role="alert" class="text-destructive">{{ error }}</p>
     <p
       v-if="store.error"
       role="alert"
@@ -62,21 +95,20 @@ async function create() {
         >{{ store.pending ? 'Đang tạo…' : 'Tạo workspace' }}</Button
       >
     </form>
-    <p v-if="store.loading" role="status" class="mt-6 text-sm">
-      Đang tải workspace…
-    </p>
+    <p v-if="loading" role="status" class="mt-6 text-sm">Đang tải workspace…</p>
     <p
-      v-else-if="!store.error && !store.workspaces.length"
+      v-else-if="!error && !shown.length"
       class="mt-6 rounded-xl border border-dashed p-8 text-center text-muted-foreground"
     >
-      Bạn chưa tham gia workspace nào. Tạo workspace hoặc mở link lời mời.
+      {{
+        search || archived
+          ? 'Không có workspace phù hợp. Thử đổi từ khóa hoặc trạng thái.'
+          : 'Bạn chưa tham gia workspace nào. Tạo workspace hoặc mở link lời mời.'
+      }}
     </p>
     <Button variant="outline" class="mt-4" @click="archived = !archived">{{
       archived ? 'Xem workspace hoạt động' : 'Xem workspace đã lưu trữ'
     }}</Button>
-    <p v-if="!store.loading && !shown.length" class="mt-3 text-sm">
-      Không có workspace trong nhóm này.
-    </p>
     <div class="mt-6 grid gap-4 sm:grid-cols-2">
       <RouterLink
         v-for="workspace in shown"
@@ -89,8 +121,18 @@ async function create() {
         <h2 class="mt-2 break-words text-lg font-semibold">
           {{ workspace.name }}
         </h2>
-        <p class="mt-3 text-sm text-primary">Xem board →</p></RouterLink
-      >
+        <p class="mt-3 text-sm text-primary">
+          Xem board
+          <ArrowRight class="ml-1 inline size-4" aria-hidden="true" /></p
+      ></RouterLink>
     </div>
+    <ServerPagination
+      v-if="!error"
+      :page="page"
+      :page-size="pageSize"
+      :total="total"
+      :disabled="loading"
+      @change="load"
+    />
   </main>
 </template>

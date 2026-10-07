@@ -5,6 +5,7 @@ import { safeRedirect } from '@/features/auth/navigation'
 import { workspaceNameSchema, inviteSchema, workspaceError } from './model'
 const api = vi.hoisted(() => ({
   list: vi.fn(),
+  get: vi.fn(),
   members: vi.fn(),
   invitations: vi.fn(),
 }))
@@ -19,6 +20,7 @@ beforeEach(() => {
   vi.resetAllMocks()
   setActivePinia(createPinia())
   api.list.mockResolvedValue([workspace])
+  api.get.mockImplementation(async () => (await api.list())[0])
   api.members.mockResolvedValue([])
   api.invitations.mockResolvedValue([])
 })
@@ -43,7 +45,10 @@ describe('workspace client state', () => {
     const store = useWorkspaceStore()
     await store.load(workspace.id)
     expect(store.owner).toBe(true)
-    api.list.mockResolvedValue([])
+    api.get.mockRejectedValue({
+      code: '42501',
+      message: 'WORKSPACE_ACCESS_DENIED',
+    })
     await store.load(workspace.id)
     expect(store.current).toBeNull()
     expect(store.members).toEqual([])
