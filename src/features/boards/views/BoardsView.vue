@@ -96,18 +96,20 @@ onBeforeUnmount(() => {
 </script>
 <template>
   <main class="workspace-page">
-    <RouterLink to="/workspaces" class="text-sm text-primary"
-      ><ArrowLeft class="mr-1 inline size-4" aria-hidden="true" />Đổi
-      workspace</RouterLink
-    >
+    <nav class="page-navigation" aria-label="Điều hướng workspace">
+      <RouterLink to="/workspaces" class="page-back-link"
+        ><ArrowLeft class="mr-1 inline size-4" aria-hidden="true" />Đổi
+        workspace</RouterLink
+      >
+      <Button as-child variant="outline"
+        ><RouterLink :to="`/workspaces/${id}/settings`"
+          >Cài đặt workspace</RouterLink
+        ></Button
+      >
+    </nav>
     <p v-if="workspace.current?.archived_at" role="status" class="mt-4">
       Workspace đã lưu trữ — chỉ đọc.
     </p>
-    <Button as-child variant="outline" class="mt-3"
-      ><RouterLink :to="`/workspaces/${id}/settings`"
-        >Cài đặt workspace</RouterLink
-      ></Button
-    >
     <PageHeader :title="'Board · ' + (workspace.current?.name || 'Workspace')">
       <Button as-child variant="outline"
         ><RouterLink :to="`/workspaces/${id}/members`"

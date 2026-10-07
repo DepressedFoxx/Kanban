@@ -289,23 +289,25 @@ onBeforeUnmount(() => {
 </script>
 <template>
   <main class="workspace-page">
-    <RouterLink
-      v-if="isMyTasksPath(route.query.returnTo)"
-      :to="String(route.query.returnTo)"
-      class="mb-3 block text-sm text-primary"
-      ><ArrowLeft class="mr-1 inline size-4" aria-hidden="true" />Công việc của
-      tôi</RouterLink
-    >
-    <RouterLink
-      :to="
-        store.snapshot
-          ? boardConfig.listPath(store.snapshot.board.workspace_id)
-          : '/workspaces'
-      "
-      class="text-sm text-primary"
-      ><ArrowLeft class="mr-1 inline size-4" aria-hidden="true" />Danh sách
-      board</RouterLink
-    >
+    <nav class="page-navigation" aria-label="Điều hướng công việc">
+      <RouterLink
+        v-if="isMyTasksPath(route.query.returnTo)"
+        :to="String(route.query.returnTo)"
+        class="page-back-link"
+        ><ArrowLeft class="mr-1 inline size-4" aria-hidden="true" />Công việc
+        của tôi</RouterLink
+      >
+      <RouterLink
+        :to="
+          store.snapshot
+            ? boardConfig.listPath(store.snapshot.board.workspace_id)
+            : '/workspaces'
+        "
+        class="page-back-link"
+        ><ArrowLeft class="mr-1 inline size-4" aria-hidden="true" />Danh sách
+        board</RouterLink
+      >
+    </nav>
     <PageHeader :title="store.snapshot?.board.name || 'Bảng công việc'">
       <RefreshButton
         variant="outline"

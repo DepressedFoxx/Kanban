@@ -132,7 +132,7 @@ async function revoke(invitation: string) {
 <template>
   <main class="workspace-page">
     <nav
-      class="mb-4 flex flex-wrap items-center gap-3"
+      class="page-navigation"
       aria-label="Điều hướng workspace"
     >
       <Button as-child variant="outline"

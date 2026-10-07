@@ -349,6 +349,22 @@ button:disabled {
   line-height: 1.3;
   font-weight: 600;
 }
+.page-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.page-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  max-width: 100%;
+  font-size: 14px;
+  color: var(--primary);
+}
 .page-heading-actions {
   display: flex;
   flex-wrap: wrap;

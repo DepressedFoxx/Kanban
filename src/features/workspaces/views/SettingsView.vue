@@ -234,7 +234,7 @@ const labels: Record<string, string> = {
 </script>
 <template>
   <main class="workspace-page">
-    <RouterLink to="/workspaces" class="text-sm text-primary"
+    <RouterLink to="/workspaces" class="page-back-link mb-4"
       ><ArrowLeft
         class="mr-1 inline size-4"
         aria-hidden="true"
