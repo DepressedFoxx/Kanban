@@ -10,6 +10,7 @@ test('G2 mobile labels/checklist retain main draft, retry and duplicate', async 
   await page.setViewportSize({ width: 390, height: 844 })
   await harness.attach(context)
   await login(page, 'owner', `/boards/${harness.board}`)
+  await page.getByText('Công cụ board', { exact: true }).click()
   await page.getByText('Quản lý nhãn (0/100)', { exact: true }).click()
   await page.getByLabel('Tên nhãn', { exact: true }).fill('Urgent')
   await page.getByRole('button', { name: 'Tạo nhãn', exact: true }).click()
@@ -74,8 +75,9 @@ test('G2 bulk confirmation applies all selected tasks', async ({
 }) => {
   await harness.attach(context)
   await login(page, 'owner', `/boards/${harness.board}`)
+  await page.getByText('Công cụ board', { exact: true }).click()
   await page.getByText('Thao tác nhiều công việc', { exact: true }).click()
-  await page.getByRole('button', { name: '○ E2E Task', exact: true }).click()
+  await page.getByRole('button', { name: 'Chọn E2E Task', exact: true }).click()
   await page
     .getByRole('combobox', { name: 'Trạng thái hàng loạt', exact: true })
     .click()
@@ -89,7 +91,7 @@ test('G2 bulk confirmation applies all selected tasks', async ({
     .click()
   await expect(page.getByRole('alertdialog')).not.toBeVisible()
   expect((await harness.snapshot()).tasks[0].status).toBe('done')
-  await page.getByRole('button', { name: '○ E2E Task', exact: true }).click()
+  await page.getByRole('button', { name: 'Chọn E2E Task', exact: true }).click()
   await page
     .getByRole('button', { name: 'Lưu trữ đã chọn', exact: true })
     .click()

@@ -41,6 +41,7 @@ test('login, workspace/board/task, comments, deep link, archive/restore and logo
     .getByRole('button', { name: 'Lưu trữ công việc', exact: true })
     .click()
   await expect(page.getByRole('dialog')).not.toBeVisible()
+  await page.getByText('Công cụ board', { exact: true }).click()
   await page
     .getByRole('button', { name: 'Công việc lưu trữ (1)', exact: true })
     .click()

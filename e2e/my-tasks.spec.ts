@@ -60,7 +60,7 @@ test('G3 mobile search, saved filter retry, task return context and deletion', a
   await expect(page.getByRole('dialog')).toBeVisible()
   await page.keyboard.press('Escape')
   await page
-    .getByRole('link', { name: '← Công việc của tôi', exact: true })
+    .getByRole('link', { name: 'Công việc của tôi', exact: true })
     .click()
   await expect(page).toHaveURL(/search=Needle/)
   await expect(page.getByLabel('Tìm tên hoặc mô tả')).toHaveValue('Needle')

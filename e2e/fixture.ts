@@ -184,9 +184,12 @@ export class Harness {
       const name = url.pathname.split('/rest/v1/rpc/')[1]
       if (!name) return reply({ message: 'Unexpected fixture endpoint' }, 404)
       const args = route.request().postDataJSON() ?? {}
-      if (name === 'board_snapshot' && this.failReads)
+      if (
+        ['board_snapshot', 'board_page_query'].includes(name) &&
+        this.failReads
+      )
         return route.abort('connectionfailed')
-      if (name === 'board_mutate') {
+      if (['board_mutate', 'board_page_mutate'].includes(name)) {
         this.mutations.push(args)
         if (this.holdNextWrite) {
           this.holdNextWrite = false
@@ -196,7 +199,7 @@ export class Harness {
       try {
         const result = await this.rpc(actor, name, args)
         if (
-          (name === 'board_mutate' ||
+          (['board_mutate', 'board_page_mutate'].includes(name) ||
             name === 'task_saved_filter_mutate' ||
             name === 'notification_mutate' ||
             name === 'notification_invitation_accept') &&
