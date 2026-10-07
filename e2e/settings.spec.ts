@@ -1,6 +1,47 @@
 import { test, expect, login } from './fixture'
 import AxeBuilder from '@axe-core/playwright'
 
+test('owner transfer explains empty candidates and allows retry after a load error', async ({
+  page,
+  context,
+  harness,
+}) => {
+  await harness.attach(context)
+  await page.setViewportSize({ width: 604, height: 884 })
+  await login(page, 'owner', `/workspaces/${harness.workspace}/settings`)
+  let fail = true
+  await page.route('**/rest/v1/rpc/workspace_member_list', async (route) => {
+    await route.fulfill({
+      status: fail ? 500 : 200,
+      contentType: 'application/json',
+      body: fail ? JSON.stringify({ message: 'Test load failure' }) : '[]',
+    })
+  })
+  await page.getByRole('button', { name: 'Chuyển Owner', exact: true }).click()
+  const dialog = page.getByRole('alertdialog')
+  await expect(dialog.getByRole('alert')).toContainText(
+    'Không tải được thành viên',
+  )
+  await expect(dialog.getByRole('combobox')).toHaveCount(0)
+  await expect(
+    dialog.getByRole('button', { name: 'Xác nhận', exact: true }),
+  ).toBeDisabled()
+  fail = false
+  await dialog.getByRole('button', { name: 'Thử lại', exact: true }).click()
+  await expect(dialog.getByRole('status')).toContainText(
+    'Chưa có thành viên để nhận quyền Owner',
+  )
+  await expect(dialog.getByRole('combobox')).toHaveCount(0)
+  await expect(
+    dialog.getByRole('button', { name: 'Xác nhận', exact: true }),
+  ).toBeDisabled()
+  await page.screenshot({
+    path: 'output/playwright/transfer-owner-empty-604.png',
+  })
+  await dialog.getByRole('button', { name: 'Hủy', exact: true }).click()
+  await expect(dialog).not.toBeVisible()
+})
+
 test('mobile settings preserves draft when cancelling navigation and returns focus', async ({
   page,
   context,

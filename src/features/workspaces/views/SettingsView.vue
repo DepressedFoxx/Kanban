@@ -43,6 +43,11 @@ const members = ref<Member[]>([]),
   confirmation = ref(''),
   target = ref(''),
   action = ref('')
+const transferLoading = ref(false)
+const transferError = ref('')
+const transferCandidates = computed(() =>
+  members.value.filter((member) => member.role !== 'owner'),
+)
 let leaveDecision: ((allow: boolean) => void) | undefined
 function closeConfirmation(value: boolean) {
   if (!value && !disabled.value) {
@@ -152,11 +157,14 @@ async function ask(kind: string) {
   confirmation.value = ''
   target.value = ''
   if (kind === 'transfer') {
+    transferLoading.value = true
+    transferError.value = ''
     try {
       members.value = await workspaceApi.members(id.value)
     } catch {
-      store.error = 'Không tải được thành viên. Hãy thử lại.'
-      action.value = ''
+      transferError.value = 'Không tải được thành viên. Hãy thử lại.'
+    } finally {
+      transferLoading.value = false
     }
   }
 }
@@ -181,6 +189,15 @@ async function execute() {
     return
   }
   if (!store.snapshot) return
+  if (
+    action.value === 'transfer' &&
+    (transferLoading.value ||
+      transferError.value ||
+      !transferCandidates.value.some(
+        (member) => member.user_id === target.value,
+      ))
+  )
+    return
   const kind = action.value
   await finish(
     kind,
@@ -422,18 +439,49 @@ const labels: Record<string, string> = {
           }}</AlertDialogDescription></AlertDialogHeader
         >
         <div v-if="action === 'transfer'" class="field">
-          <Label for="new-owner">Owner mới</Label
-          ><Select v-model="target" :disabled="disabled"
-            ><SelectTrigger id="new-owner"
-              ><SelectValue placeholder="Chọn thành viên" /></SelectTrigger
-            ><SelectContent
-              ><SelectItem
-                v-for="member in members.filter((m) => m.role !== 'owner')"
-                :key="member.user_id"
-                :value="member.user_id"
-                >{{ member.display_name || member.email }}</SelectItem
-              ></SelectContent
-            ></Select
+          <p
+            v-if="transferLoading"
+            role="status"
+            class="text-sm text-muted-foreground"
+          >
+            Đang tải thành viên…
+          </p>
+          <div v-else-if="transferError" class="grid gap-3">
+            <p role="alert" class="text-sm text-destructive">
+              {{ transferError }}
+            </p>
+            <Button
+              variant="outline"
+              :disabled="disabled"
+              @click="ask('transfer')"
+              >Thử lại</Button
+            >
+          </div>
+          <div
+            v-else-if="!transferCandidates.length"
+            role="status"
+            class="rounded-lg border bg-muted p-4"
+          >
+            <p class="font-medium">Chưa có thành viên để nhận quyền Owner</p>
+            <p class="mt-2 text-sm text-muted-foreground">
+              Workspace hiện chỉ có bạn. Hãy mời thêm người trong mục Thành viên
+              và lời mời, chờ họ tham gia rồi chuyển quyền.
+            </p>
+          </div>
+          <template v-else
+            ><Label for="new-owner">Owner mới</Label
+            ><Select v-model="target" :disabled="disabled"
+              ><SelectTrigger id="new-owner" class="w-full"
+                ><SelectValue placeholder="Chọn thành viên" /></SelectTrigger
+              ><SelectContent
+                ><SelectItem
+                  v-for="member in transferCandidates"
+                  :key="member.user_id"
+                  :value="member.user_id"
+                  >{{ member.display_name || member.email }}</SelectItem
+                ></SelectContent
+              ></Select
+            ></template
           >
         </div>
         <div v-if="action === 'archive'" class="field">
@@ -458,7 +506,12 @@ const labels: Record<string, string> = {
             v-else
             :disabled="
               disabled ||
-              (action === 'transfer' && !target) ||
+              (action === 'transfer' &&
+                (transferLoading ||
+                  !!transferError ||
+                  !transferCandidates.some(
+                    (member) => member.user_id === target,
+                  ))) ||
               (action === 'archive' && confirmation !== store.snapshot?.name)
             "
             @click="execute"
