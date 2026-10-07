@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { Button } from '@/components/ui/button'
+import { Check, Circle } from '@lucide/vue'
 import { Input } from '@/components/ui/input'
 import { useOnlineBoardStore } from '@/stores/onlineBoard'
 import { productivityConfig as limits, labelClasses } from './productivity'
@@ -8,8 +9,12 @@ const props = defineProps<{ task: string; readOnly: boolean }>()
 const emit = defineEmits<{ 'draft-change': [boolean] }>()
 const store = useOnlineBoardStore()
 const newId = () => crypto.randomUUID()
-const current = computed(() =>
-  store.snapshot?.tasks.find((t) => t.id === props.task),
+const current = computed(
+  () =>
+    store.snapshot?.tasks.find((t) => t.id === props.task) ??
+    (store.snapshot?.detail?.id === props.task
+      ? store.snapshot.detail
+      : undefined),
 )
 const labels = ref<string[]>([])
 const items = ref<{ id: string; body: string; done: boolean }[]>([])
@@ -111,7 +116,9 @@ watch(
           (!labels.includes(label.id) && labels.length >= limits.labelsPerTask)
         "
         @click="toggle(label.id)"
-        >{{ labels.includes(label.id) ? '✓ ' : '' }}{{ label.name }}</Button
+        ><Check v-if="labels.includes(label.id)" aria-hidden="true" />{{
+          label.name
+        }}</Button
       >
     </div>
     <div class="flex flex-wrap items-center justify-between gap-2">
@@ -140,7 +147,9 @@ watch(
             :aria-label="'Hoàn thành mục ' + (index + 1)"
             :disabled="blocked"
             @click="item.done = !item.done"
-            >{{ item.done ? '✓' : '○' }}</Button
+            ><Check v-if="item.done" aria-hidden="true" /><Circle
+              v-else
+              aria-hidden="true" /></Button
           ><Input
             v-model="item.body"
             :aria-label="'Nội dung mục ' + (index + 1)"

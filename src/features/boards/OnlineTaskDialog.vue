@@ -139,8 +139,12 @@ onBeforeUnmount(() => {
   window.removeEventListener('beforeunload', beforeUnload)
   resolveNavigation?.(false)
 })
-const latestTask = computed(() =>
-  store.snapshot?.tasks.find((t) => t.id === props.task?.id),
+const latestTask = computed(
+  () =>
+    store.snapshot?.tasks.find((t) => t.id === props.task?.id) ??
+    (store.snapshot?.detail?.id === props.task?.id
+      ? store.snapshot?.detail
+      : undefined),
 )
 const comparisonFields = [
   'title',
@@ -208,8 +212,10 @@ const assignee = computed({
 })
 const taskArchived = computed(() =>
   Boolean(
-    store.snapshot?.tasks.find((t) => t.id === props.task?.id)?.archived_at ??
-    props.task?.archived_at,
+    (
+      store.snapshot?.tasks.find((t) => t.id === props.task?.id) ??
+      store.snapshot?.detail
+    )?.archived_at ?? props.task?.archived_at,
   ),
 )
 const canEdit = computed(
@@ -458,7 +464,7 @@ async function archive() {
         </p>
         <div
           v-if="changed && canEdit"
-          class="rounded-lg bg-amber-50 p-3 text-sm text-amber-900"
+          class="rounded-lg bg-warning-background p-3 text-sm text-warning"
         >
           <p>
             Board đã thay đổi. So sánh bản hiện tại với bản nháp trước khi lưu.
@@ -531,6 +537,7 @@ async function archive() {
       </form>
       <TaskExtras
         v-if="task && open"
+        v-show="!showDiscussion"
         :key="task.id"
         :task="task.id"
         :read-only="!canEdit"
@@ -538,6 +545,7 @@ async function archive() {
       />
       <Button
         v-if="task && canEdit"
+        v-show="!showDiscussion"
         variant="outline"
         class="mt-3"
         :disabled="dirty || changed"
@@ -548,6 +556,7 @@ async function archive() {
       >
       <TaskAttachments
         v-if="task && open"
+        v-show="!showDiscussion"
         :key="task.id"
         :task="task.id"
         :revision="store.snapshot?.board.version"

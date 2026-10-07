@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { Button } from '@/components/ui/button'
+import { Check, Circle } from '@lucide/vue'
 import {
   Select,
   SelectContent,
@@ -28,9 +29,11 @@ const tasks = computed(
   () => store.snapshot?.tasks.filter((t) => !t.archived_at) ?? [],
 )
 watch(
-  () => store.snapshot?.board.id,
+  () => tasks.value.map((task) => task.id).join(','),
   () => {
-    ids.value = []
+    ids.value = ids.value.filter((id) =>
+      tasks.value.some((task) => task.id === id),
+    )
   },
 )
 function toggle(id: string) {
@@ -68,8 +71,9 @@ async function run() {
       Thao tác nhiều công việc
     </summary>
     <p class="my-3 text-sm text-muted-foreground">
-      Chọn tối đa {{ limits.bulkTasks }} công việc. Toàn bộ lựa chọn được lưu
-      cùng lúc; nếu có xung đột sẽ không đổi công việc nào.
+      Chọn tối đa {{ limits.bulkTasks }} công việc trên các trang đang hiển thị.
+      Toàn bộ lựa chọn được lưu cùng lúc; nếu có xung đột sẽ không đổi công việc
+      nào.
     </p>
     <div class="max-h-60 space-y-1 overflow-y-auto">
       <Button
@@ -78,12 +82,17 @@ async function run() {
         variant="ghost"
         class="h-auto w-full justify-start whitespace-normal text-left"
         :aria-pressed="ids.includes(task.id)"
+        :aria-label="'Chọn ' + task.title"
         :disabled="
           !store.writable ||
           (!ids.includes(task.id) && ids.length >= limits.bulkTasks)
         "
         @click="toggle(task.id)"
-        >{{ ids.includes(task.id) ? '✓' : '○' }} {{ task.title }}</Button
+        ><Check v-if="ids.includes(task.id)" aria-hidden="true" /><Circle
+          v-else
+          aria-hidden="true"
+        />
+        {{ task.title }}</Button
       >
     </div>
     <div class="mt-3 flex flex-wrap items-center gap-2">

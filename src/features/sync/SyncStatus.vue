@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { syncStatus, type SyncInput } from './status'
-const props = defineProps<{ value: SyncInput; connection?: string }>()
+const props = defineProps<{
+  value: SyncInput
+  connection?: string
+  compact?: boolean
+}>()
 const status = computed(() => syncStatus(props.value))
 const time = computed(() =>
   props.value.lastSyncedAt
@@ -18,16 +22,21 @@ const time = computed(() =>
       role="status"
       aria-live="polite"
       :class="{
-        'text-amber-800': ['uncertain', 'offline', 'stale'].includes(
-          status.kind,
-        ),
+        'text-warning': ['uncertain', 'offline', 'stale'].includes(status.kind),
         'text-destructive': status.kind === 'error',
       }"
     >
       {{ status.label }}
     </p>
-    <span v-if="connection">{{ connection }}</span>
-    <time v-if="time" :datetime="value.lastSyncedAt"
+    <details v-if="compact && (connection || time)">
+      <summary class="cursor-pointer">Chi tiết đồng bộ</summary>
+      <p v-if="connection" class="mt-2">{{ connection }}</p>
+      <time v-if="time" :datetime="value.lastSyncedAt"
+        >Lần xác nhận gần nhất: {{ time }}</time
+      >
+    </details>
+    <span v-if="connection && !compact">{{ connection }}</span>
+    <time v-if="time && !compact" :datetime="value.lastSyncedAt"
       >Lần xác nhận gần nhất: {{ time }}</time
     >
   </div>

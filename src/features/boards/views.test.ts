@@ -1,5 +1,20 @@
 // @vitest-environment jsdom
 vi.mock('@/lib/supabase', () => ({ supabase: null }))
+vi.mock('@/lib/useServerList', async () => {
+  const { ref } = await import('vue')
+  return {
+    useServerList: () => ({
+      items: ref([]),
+      page: ref(1),
+      pageSize: ref(20),
+      total: ref(0),
+      filters: ref({}),
+      loading: ref(false),
+      error: ref(''),
+      load: vi.fn(),
+    }),
+  }
+})
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { createPinia } from 'pinia'
@@ -15,6 +30,7 @@ const api = vi.hoisted(() => ({
   mutate: vi.fn(),
 }))
 const ws = vi.hoisted(() => ({
+  get: vi.fn(),
   list: vi.fn(),
   members: vi.fn(),
   invitations: vi.fn(),
@@ -62,6 +78,7 @@ const snapshot = (role = 'owner') => ({
 let wrapper: VueWrapper | undefined
 beforeEach(() => {
   vi.resetAllMocks()
+  ws.get.mockImplementation(async () => (await ws.list())[0])
   api.list.mockResolvedValue([board])
   api.snapshot.mockResolvedValue(snapshot())
   ws.list.mockResolvedValue([
@@ -96,7 +113,7 @@ describe('online board UI', () => {
     api.create.mockResolvedValue(id)
     const { router } = await render()
     await wrapper!.get('#board-name').setValue('Website')
-    await wrapper!.get('form').trigger('submit')
+    await wrapper!.findAll('form')[1]!.trigger('submit')
     await flushPromises()
     expect(api.create).toHaveBeenCalledWith(id, expect.any(String), 'Website')
     expect(router.currentRoute.value.path).toBe(`/boards/${id}`)
@@ -105,7 +122,7 @@ describe('online board UI', () => {
     api.create.mockRejectedValue({ code: 'PGRST202' })
     await render()
     await wrapper!.get('#board-name').setValue('Draft')
-    await wrapper!.get('form').trigger('submit')
+    await wrapper!.findAll('form')[1]!.trigger('submit')
     await flushPromises()
     expect(wrapper!.get('[role="alert"]').text()).toContain('202609300002')
     expect(
@@ -118,7 +135,9 @@ describe('online board UI', () => {
     expect(wrapper!.text()).toContain('chỉ có quyền xem')
     expect(wrapper!.text()).not.toContain('Tạo công việc')
     expect(wrapper!.find('#rename-board').exists()).toBe(false)
-    expect(wrapper!.get(`#move-${taskId}`).attributes('disabled')).toBeDefined()
+    expect(
+      wrapper!.get(`#move-${taskId}`).attributes('disabled'),
+    ).toBeDefined()
   })
   it('submits only the destination event for cross-column drag', async () => {
     api.mutate.mockResolvedValue({
@@ -132,7 +151,7 @@ describe('online board UI', () => {
     columns[1]!.vm.$emit('change', { added: { element: task, newIndex: 0 } })
     await flushPromises()
     expect(api.mutate).toHaveBeenCalledTimes(1)
-    expect(api.mutate.mock.calls[0]!.slice(3)).toEqual([
+    expect(api.mutate.mock.calls[0]!.slice(3, 5)).toEqual([
       'move_task',
       { id: taskId, status: 'doing', position: 0 },
     ])
@@ -190,7 +209,9 @@ describe('online board UI', () => {
       query: { task: '40000000-0000-4000-8000-000000000001' },
     })
     await flushPromises()
-    expect(wrapper!.text()).toContain('Task không tồn tại trong board này')
+    expect(wrapper!.text()).toContain(
+      'Task không tồn tại hoặc bạn không còn quyền truy cập.',
+    )
   })
   it('keeps a new task draft open when a collaboration snapshot arrives', async () => {
     const { pinia } = await render(true)
@@ -374,6 +395,7 @@ it('blocks navigation and warns on reload while a board write is uncertain, even
 it('opens a task through its card with the sync route guards active', async () => {
   const { router } = await render(true, true)
   await wrapper!
+    .get('.task-card')
     .findAll('button')
     .find((b) => b.text() === 'Task A')!
     .trigger('click')

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button'
+import { usePreferredReducedMotion } from '@vueuse/core'
 import { appConfig } from '@/config/app'
 import { computed } from 'vue'
 import draggable from 'vuedraggable'
@@ -17,6 +18,7 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ edit: [task: Task]; add: [status: Status] }>()
 const board = useBoardStore()
+const reducedMotion = usePreferredReducedMotion()
 const filtered = computed(() => Boolean(props.query.trim() || props.priority))
 const cards = computed({
   get: () =>
@@ -41,13 +43,13 @@ const cards = computed({
           :style="{ backgroundColor: color }"
         />{{ label
         }}<span
-          class="rounded bg-white px-2 py-0.5 text-xs text-muted-foreground"
+          class="rounded bg-card px-2 py-0.5 text-xs text-muted-foreground"
           >{{ cards.length }}</span
         >
       </h2>
       <Button
         variant="ghost"
-        class="rounded-md p-2 text-muted-foreground hover:bg-white"
+        class="rounded-md p-2 text-muted-foreground hover:bg-card"
         :aria-label="`Thêm vào ${label}`"
         @click="emit('add', status)"
       >
@@ -59,7 +61,7 @@ const cards = computed({
       item-key="id"
       group="tasks"
       handle=".drag-handle"
-      :animation="appConfig.dragAnimationMs"
+      :animation="reducedMotion === 'reduce' ? 0 : appConfig.dragAnimationMs"
       :disabled="filtered"
       ghost-class="drag-ghost"
       class="min-h-24 space-y-3 pb-2"
@@ -81,7 +83,7 @@ const cards = computed({
     </p>
     <Button
       variant="ghost"
-      class="flex w-full items-center justify-center gap-2 rounded-lg py-3 text-xs text-muted-foreground hover:bg-white"
+      class="flex w-full items-center justify-center gap-2 rounded-lg py-3 text-xs text-muted-foreground hover:bg-card"
       @click="emit('add', status)"
     >
       <Plus :size="14" />Thêm công việc

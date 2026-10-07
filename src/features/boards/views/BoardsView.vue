@@ -1,6 +1,11 @@
 <script setup lang="ts">
+import RefreshButton from '@/components/RefreshButton.vue'
+import { Search, ArrowLeft, ArrowRight } from '@lucide/vue'
 import PageHeader from '@/components/PageHeader.vue'
-import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
+import ServerPagination from '@/components/ServerPagination.vue'
+import { useServerList } from '@/lib/useServerList'
+import { onlineBoardSchema } from '../model'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -25,9 +30,22 @@ const canCreate = computed(
     !workspace.current?.archived_at,
 )
 let active = true
-const shown = computed(() =>
-  items.value.filter((b) => Boolean(b.archived_at) === archived.value),
-)
+const {
+  items: shown,
+  page,
+  pageSize,
+  total,
+  filters,
+  loading: listLoading,
+  error: listError,
+  load,
+} = useServerList('boards', onlineBoardSchema, id)
+const search = ref('')
+function queryList() {
+  filters.value = { archived: archived.value, search: search.value }
+  return load(1)
+}
+watch(archived, queryList)
 async function refresh() {
   if (pending.value) return
   loading.value = true
@@ -35,8 +53,7 @@ async function refresh() {
   items.value = []
   try {
     if (!(await workspace.load(id))) return
-    const result = await boardsApi.list(id)
-    if (active) items.value = result
+    await queryList()
   } catch (cause) {
     if (active) error.value = boardError(cause)
   } finally {
@@ -80,7 +97,8 @@ onBeforeUnmount(() => {
 <template>
   <main class="workspace-page">
     <RouterLink to="/workspaces" class="text-sm text-primary"
-      >← Đổi workspace</RouterLink
+      ><ArrowLeft class="mr-1 inline size-4" aria-hidden="true" />Đổi
+      workspace</RouterLink
     >
     <p v-if="workspace.current?.archived_at" role="status" class="mt-4">
       Workspace đã lưu trữ — chỉ đọc.
@@ -95,10 +113,30 @@ onBeforeUnmount(() => {
         ><RouterLink :to="`/workspaces/${id}/members`"
           >Thành viên</RouterLink
         ></Button
-      ><Button variant="outline" :disabled="loading || pending" @click="refresh"
-        >Tải lại</Button
-      >
+      ><RefreshButton
+        variant="outline"
+        :disabled="loading || pending"
+        @click="refresh"
+        label="Tải lại"
+      />
     </PageHeader>
+    <form class="my-4 flex items-center gap-2" @submit.prevent="queryList">
+      <Input
+        v-model="search"
+        aria-label="Tìm board"
+        placeholder="Tìm board…"
+      /><Button
+        type="submit"
+        size="icon"
+        aria-label="Tìm board"
+        title="Tìm board"
+        :disabled="listLoading"
+        ><Search aria-hidden="true"
+      /></Button>
+    </form>
+    <p v-if="listError" role="alert" class="text-destructive">
+      {{ listError }}
+    </p>
     <p
       v-if="error || workspace.error"
       role="alert"
@@ -141,7 +179,9 @@ onBeforeUnmount(() => {
         >Đã lưu trữ</Button
       >
     </div>
-    <p v-if="loading" role="status" class="mt-6">Đang tải board…</p>
+    <p v-if="loading || listLoading" role="status" class="mt-6">
+      Đang tải board…
+    </p>
     <p
       v-else-if="!error && !workspace.error && !shown.length"
       class="mt-6 rounded-xl border border-dashed p-8 text-center text-muted-foreground"
@@ -149,7 +189,7 @@ onBeforeUnmount(() => {
       {{
         archived
           ? 'Chưa có board lưu trữ.'
-          : 'Chưa có board. Owner có thể tạo board đầu tiên.'
+          : 'Chưa có board phù hợp. Owner hoặc Member có thể tạo board.'
       }}
     </p>
     <div v-else class="mt-6 grid gap-4 sm:grid-cols-2">
@@ -160,11 +200,20 @@ onBeforeUnmount(() => {
         class="min-w-0 rounded-xl border bg-card p-5 hover:bg-accent"
         ><h2 class="break-words text-lg font-semibold">{{ board.name }}</h2>
         <p class="mt-3 text-sm text-muted-foreground">
-          {{
-            board.archived_at ? 'Chỉ đọc · Đã lưu trữ' : 'Mở bảng công việc →'
-          }}
-        </p></RouterLink
-      >
+          {{ board.archived_at ? 'Chỉ đọc · Đã lưu trữ' : 'Mở bảng công việc' }}
+          <ArrowRight
+            v-if="!board.archived_at"
+            class="ml-1 inline size-4"
+            aria-hidden="true"
+          /></p
+      ></RouterLink>
     </div>
+    <ServerPagination
+      :page="page"
+      :page-size="pageSize"
+      :total="total"
+      :disabled="loading || listLoading"
+      @change="load"
+    />
   </main>
 </template>

@@ -52,6 +52,13 @@ export const onlineTaskSchema = taskInputSchema.extend({
   archived_at: z.string().nullable(),
 })
 export const snapshotSchema = z.object({
+  pages: z
+    .record(
+      z.string(),
+      z.object({ page: z.number(), pageSize: z.number(), total: z.number() }),
+    )
+    .optional(),
+  detail: onlineTaskSchema.nullable().optional(),
   workspace: z
     .object({
       id: z.string(),

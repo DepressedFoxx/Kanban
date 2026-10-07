@@ -5,7 +5,7 @@ import {
   isDefinitiveFailure,
 } from '@/features/sync/request'
 import { defineStore } from 'pinia'
-import { boardsApi } from '@/features/boards/api'
+import { boardsApi, type BoardQuery } from '@/features/boards/api'
 import { boardError, type BoardSnapshot } from '@/features/boards/model'
 type Mutation = {
   board: string
@@ -16,6 +16,12 @@ type Mutation = {
 }
 export const useOnlineBoardStore = defineStore('online-board', () => {
   const snapshot = ref<BoardSnapshot | null>(null)
+  const query = ref<BoardQuery>({
+    pages: {},
+    pageSize: 20,
+    filters: {},
+    task: null,
+  })
   const loading = ref(false),
     pending = ref(false),
     error = ref(''),
@@ -43,6 +49,7 @@ export const useOnlineBoardStore = defineStore('online-board', () => {
     refreshing.value = false
     syncError.value = ''
     snapshot.value = null
+    query.value = { pages: {}, pageSize: 20, filters: {}, task: null }
     loading.value = false
     pending.value = false
     uncertain.value = null
@@ -52,8 +59,15 @@ export const useOnlineBoardStore = defineStore('online-board', () => {
     lastAction.value = ''
     lastSyncedAt.value = ''
   }
-  async function load(id: string, options: { background?: boolean } = {}) {
-    if (pending.value || loading.value || refreshing.value || uncertain.value)
+  async function load(
+    id: string,
+    options: { background?: boolean; force?: boolean } = {},
+  ) {
+    if (
+      pending.value ||
+      uncertain.value ||
+      (!options.force && (loading.value || refreshing.value))
+    )
       return false
     const background = Boolean(
       options.background && snapshot.value?.board.id === id,
@@ -69,7 +83,7 @@ export const useOnlineBoardStore = defineStore('online-board', () => {
       uncertain.value = null
     }
     try {
-      const value = await boardsApi.snapshot(id)
+      const value = await boardsApi.snapshot(id, query.value)
       if (request !== generation) return false
       // Keep object identity when nothing changed; polling must not rebuild cards.
       if (JSON.stringify(snapshot.value) !== JSON.stringify(value))
@@ -109,6 +123,7 @@ export const useOnlineBoardStore = defineStore('online-board', () => {
         mutation.id,
         mutation.action,
         mutation.data,
+        query.value,
       )
       if (request !== generation) return false
       snapshot.value = value
@@ -131,7 +146,7 @@ export const useOnlineBoardStore = defineStore('online-board', () => {
       }
       if (code === 'PT409' || code === '40001' || code === '22023') {
         try {
-          const value = await boardsApi.snapshot(mutation.board)
+          const value = await boardsApi.snapshot(mutation.board, query.value)
           if (request === generation) snapshot.value = value
         } catch {
           if (request === generation) snapshot.value = null
@@ -179,6 +194,7 @@ export const useOnlineBoardStore = defineStore('online-board', () => {
   }
   return {
     snapshot,
+    query,
     loading,
     refreshing,
     syncError,

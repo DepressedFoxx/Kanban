@@ -1,5 +1,9 @@
 <script setup lang="ts">
+import RefreshButton from '@/components/RefreshButton.vue'
 import { useCollab } from '@/features/collab/useCollab'
+import { usePreferredReducedMotion } from '@vueuse/core'
+import ServerPagination from '@/components/ServerPagination.vue'
+import { Plus, ArrowLeft } from '@lucide/vue'
 import PageHeader from '@/components/PageHeader.vue'
 import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import SyncStatus from '@/features/sync/SyncStatus.vue'
@@ -36,6 +40,7 @@ import { boardConfig, type OnlineTask } from '../model'
 import { useOnlineBoardStore } from '@/stores/onlineBoard'
 import { isMyTasksPath } from '@/features/my-tasks/model'
 const router = useRouter()
+const reducedMotion = usePreferredReducedMotion()
 const taskLinkError = ref('')
 const route = useRoute(),
   store = useOnlineBoardStore(),
@@ -46,6 +51,7 @@ const query = ref(''),
   showArchive = ref(false),
   name = ref('')
 const nameVersion = ref(0)
+const filtersOpen = ref(false)
 const open = ref(false),
   selected = ref<OnlineTask | null>(null),
   initial = ref<Status>('todo'),
@@ -89,21 +95,49 @@ function memberName(user: string | null) {
   const member = store.snapshot?.members.find((m) => m.user_id === user)
   return member?.display_name || member?.email || ''
 }
-function matches(task: OnlineTask) {
-  return (
-    `${task.title} ${task.description} ${memberName(task.assignee_id)}`
-      .toLocaleLowerCase('vi')
-      .includes(query.value.trim().toLocaleLowerCase('vi')) &&
-    (priority.value === 'all' || task.priority === priority.value) &&
-    (assignee.value === 'all' ||
-      (assignee.value === 'none'
-        ? !task.assignee_id
-        : task.assignee_id === assignee.value))
-  )
-}
 function cards(status: Status) {
-  return active.value.filter((t) => t.status === status && matches(t))
+  return active.value.filter((t) => t.status === status)
 }
+const partial = computed(() =>
+  Object.values(store.snapshot?.pages ?? {}).some((p) => p.total > p.pageSize),
+)
+function count(status: string) {
+  return store.snapshot?.pages?.[status]?.total ?? 0
+}
+async function changePage(status: string, page: number, size: number) {
+  store.query = {
+    ...store.query,
+    pages:
+      size === store.query.pageSize
+        ? { ...store.query.pages, [status]: page }
+        : {},
+    pageSize: size,
+  }
+  await store.load(id, { background: true, force: true })
+}
+let filterTimer: ReturnType<typeof setTimeout> | undefined
+watch(
+  [query, priority, assignee, () => store.pending, () => !!store.uncertain],
+  () => {
+    clearTimeout(filterTimer)
+    filterTimer = setTimeout(() => {
+      if (store.pending || store.uncertain) return
+      const filters = {
+        search: query.value.trim(),
+        priority: priority.value,
+        assignee: assignee.value,
+      }
+      if (JSON.stringify(filters) === JSON.stringify(store.query.filters))
+        return
+      store.query = {
+        ...store.query,
+        pages: {},
+        filters,
+      }
+      void store.load(id, { background: true, force: true })
+    }, 300)
+  },
+)
 function displayTask(task: OnlineTask) {
   return {
     ...task,
@@ -135,23 +169,39 @@ function setDialogOpen(value: boolean) {
     })
 }
 watch(
-  [() => route.query.task, () => store.snapshot?.board.id],
-  () => {
-    taskLinkError.value = ''
-    const taskId = route.query.task
-    if (!taskId) {
+  () => route.query.task,
+  async (value) => {
+    const taskId =
+      typeof value === 'string' && /^[0-9a-f-]{36}$/i.test(value) ? value : null
+    store.query.task = taskId
+    if (!value) {
       open.value = false
       return
     }
-    if (!store.snapshot) return
+    if (store.snapshot) await store.load(id, { background: true, force: true })
+  },
+  { immediate: true },
+)
+watch(
+  [() => route.query.task, () => store.snapshot, () => store.refreshing],
+  () => {
+    taskLinkError.value = ''
+    // Snapshot updates must not dismiss an unsaved new-task draft.
+    if (!route.query.task) return
+    if (!store.snapshot) {
+      open.value = false
+      return
+    }
     const found =
-      typeof taskId === 'string'
-        ? store.snapshot.tasks.find((t) => t.id === taskId)
-        : undefined
+      store.snapshot.tasks.find((t) => t.id === route.query.task) ??
+      (store.snapshot.detail?.id === route.query.task
+        ? store.snapshot.detail
+        : undefined)
     if (!found) {
+      if (store.refreshing || store.loading) return
       open.value = false
       taskLinkError.value =
-        'Task không tồn tại trong board này hoặc đường dẫn không hợp lệ.'
+        'Task không tồn tại hoặc bạn không còn quyền truy cập.'
       return
     }
     selected.value = found
@@ -186,9 +236,8 @@ async function move(taskId: string, status: Status, position?: number) {
   await store.mutate('move_task', {
     id: taskId,
     status,
-    position:
-      position ??
-      active.value.filter((t) => t.status === status && t.id !== taskId).length,
+    // Server clamps this stable sentinel to the full column end, including hidden pages.
+    position: position ?? 2147483647,
   })
 }
 function dragged(
@@ -199,7 +248,7 @@ function dragged(
   },
 ) {
   const change = event.added ?? event.moved
-  if (change && !filtered.value)
+  if (change && !filtered.value && !partial.value && !store.refreshing)
     void move(change.element.id, status, change.newIndex)
 }
 watch(
@@ -234,6 +283,7 @@ onMounted(() => {
 })
 onBeforeUnmount(() => {
   window.removeEventListener('beforeunload', protectUnload)
+  clearTimeout(filterTimer)
   store.clear()
 })
 </script>
@@ -243,7 +293,8 @@ onBeforeUnmount(() => {
       v-if="isMyTasksPath(route.query.returnTo)"
       :to="String(route.query.returnTo)"
       class="mb-3 block text-sm text-primary"
-      >← Công việc của tôi</RouterLink
+      ><ArrowLeft class="mr-1 inline size-4" aria-hidden="true" />Công việc của
+      tôi</RouterLink
     >
     <RouterLink
       :to="
@@ -252,10 +303,11 @@ onBeforeUnmount(() => {
           : '/workspaces'
       "
       class="text-sm text-primary"
-      >← Danh sách board</RouterLink
+      ><ArrowLeft class="mr-1 inline size-4" aria-hidden="true" />Danh sách
+      board</RouterLink
     >
     <PageHeader :title="store.snapshot?.board.name || 'Bảng công việc'">
-      <Button
+      <RefreshButton
         variant="outline"
         :disabled="
           store.pending ||
@@ -265,10 +317,14 @@ onBeforeUnmount(() => {
           !online
         "
         @click="refresh(true)"
-        >Tải lại</Button
-      ><Button v-if="canWrite" @click="add()">Tạo công việc</Button>
+        label="Tải lại"
+      /><Button v-if="canWrite" @click="add()">Tạo công việc</Button>
     </PageHeader>
-    <p v-if="!online" role="alert" class="mt-4 rounded-lg bg-amber-50 p-3">
+    <p
+      v-if="!online"
+      role="alert"
+      class="mt-4 rounded-lg bg-warning-background p-3 text-warning"
+    >
       Đang offline. Kết nối lại để lưu thay đổi.
     </p>
     <p
@@ -286,6 +342,7 @@ onBeforeUnmount(() => {
       >Xác nhận lại thao tác</Button
     >
     <SyncStatus
+      compact
       :connection="collabLabel"
       :value="{
         online,
@@ -322,16 +379,13 @@ onBeforeUnmount(() => {
       >
         Workspace đã lưu trữ, nội dung chỉ đọc.
       </p>
-      <details
-        v-if="
-          store.snapshot.role === 'owner' &&
-          !store.snapshot.workspace?.archived_at
-        "
-        class="board-options"
-      >
-        <summary>Tuỳ chọn board</summary>
+      <details class="board-options">
+        <summary>Công cụ board</summary>
         <form
-          v-if="store.snapshot.role === 'owner'"
+          v-if="
+            store.snapshot.role === 'owner' &&
+            !store.snapshot.workspace?.archived_at
+          "
           class="mt-5 flex flex-wrap items-end gap-2"
           @submit.prevent="rename"
         >
@@ -374,6 +428,15 @@ onBeforeUnmount(() => {
             }}</Button
           >
         </form>
+        <div class="mt-4 space-y-3">
+          <LabelManager />
+          <BulkTasks />
+          <Button variant="outline" @click="showArchive = !showArchive">{{
+            showArchive
+              ? 'Về bảng công việc'
+              : `Công việc lưu trữ (${count('archived')})`
+          }}</Button>
+        </div>
       </details>
       <div
         v-if="
@@ -381,7 +444,7 @@ onBeforeUnmount(() => {
           nameVersion !== store.snapshot.board.version &&
           name !== store.snapshot.board.name
         "
-        class="mt-3 text-sm text-amber-900"
+        class="mt-3 text-sm text-warning"
       >
         Board đã thay đổi. Tên hiện tại: {{ store.snapshot.board.name }}.
         <Button
@@ -393,14 +456,9 @@ onBeforeUnmount(() => {
       </div>
       <div class="mt-6 flex flex-wrap gap-3">
         <span class="rounded-lg bg-muted px-3 py-2 text-sm"
-          >{{ active.length }} công việc ·
-          {{ active.filter((t) => t.status === 'done').length }} hoàn
-          thành</span
-        ><Button variant="outline" @click="showArchive = !showArchive">{{
-          showArchive
-            ? 'Về bảng công việc'
-            : `Công việc lưu trữ (${archived.length})`
-        }}</Button>
+          >{{ columns.reduce((sum, c) => sum + count(c.id), 0) }} công việc ·
+          {{ count('done') }} hoàn thành</span
+        >
       </div>
       <div v-if="showArchive" class="mt-5 space-y-3">
         <p v-if="!archived.length" class="text-sm text-muted-foreground">
@@ -423,46 +481,75 @@ onBeforeUnmount(() => {
             >Khôi phục</Button
           >
         </div>
+        <ServerPagination
+          v-if="store.snapshot.pages?.archived"
+          :page="store.snapshot.pages.archived.page"
+          :page-size="store.query.pageSize"
+          :total="count('archived')"
+          :disabled="store.pending || store.refreshing"
+          @change="(page, size) => changePage('archived', page, size)"
+        />
       </div>
       <template v-else>
         <div class="my-5 flex flex-wrap gap-2">
           <Input
             v-model="query"
-            class="w-full sm:w-64"
+            class="min-w-0 flex-1 sm:max-w-64"
             aria-label="Tìm công việc"
             placeholder="Tìm công việc, thành viên…"
-          /><Select v-model="priority"
-            ><SelectTrigger class="w-full sm:w-44" aria-label="Lọc ưu tiên"
-              ><SelectValue /></SelectTrigger
-            ><SelectContent
-              ><SelectItem value="all">Mọi ưu tiên</SelectItem
-              ><SelectItem v-for="p in priorities" :key="p" :value="p">{{
-                priorityLabels[p]
-              }}</SelectItem></SelectContent
-            ></Select
-          ><Select v-model="assignee"
-            ><SelectTrigger
-              class="w-full sm:w-52"
-              aria-label="Lọc người phụ trách"
-              ><SelectValue /></SelectTrigger
-            ><SelectContent
-              ><SelectItem value="all">Mọi thành viên</SelectItem
-              ><SelectItem value="none">Chưa giao</SelectItem
-              ><SelectItem
-                v-for="m in store.snapshot.members"
-                :key="m.user_id"
-                :value="m.user_id"
-                >{{ m.display_name || m.email }}</SelectItem
-              ></SelectContent
-            ></Select
+          />
+          <Button
+            variant="outline"
+            :aria-expanded="filtersOpen"
+            aria-controls="board-filters"
+            @click="filtersOpen = !filtersOpen"
           >
+            Bộ lọc{{ priority !== 'all' || assignee !== 'all' ? ' •' : '' }}
+          </Button>
+          <div
+            v-show="filtersOpen"
+            id="board-filters"
+            class="flex w-full flex-wrap gap-2 rounded-xl border bg-card p-4"
+          >
+            <Select v-model="priority"
+              ><SelectTrigger class="w-full sm:w-44" aria-label="Lọc ưu tiên"
+                ><SelectValue /></SelectTrigger
+              ><SelectContent
+                ><SelectItem value="all">Mọi ưu tiên</SelectItem
+                ><SelectItem v-for="p in priorities" :key="p" :value="p">{{
+                  priorityLabels[p]
+                }}</SelectItem></SelectContent
+              ></Select
+            ><Select v-model="assignee"
+              ><SelectTrigger
+                class="w-full sm:w-52"
+                aria-label="Lọc người phụ trách"
+                ><SelectValue /></SelectTrigger
+              ><SelectContent
+                ><SelectItem value="all">Mọi thành viên</SelectItem
+                ><SelectItem value="none">Chưa giao</SelectItem
+                ><SelectItem
+                  v-for="m in store.snapshot.members"
+                  :key="m.user_id"
+                  :value="m.user_id"
+                  >{{ m.display_name || m.email }}</SelectItem
+                ></SelectContent
+              ></Select
+            >
+          </div>
         </div>
-        <p v-if="filtered" class="mb-4 text-sm text-muted-foreground">
-          Đang lọc: kéo thả tạm tắt. Bạn vẫn có thể đổi trạng thái qua
-          menu.<Button variant="link" @click="clearFilters">Xóa bộ lọc</Button>
+        <p
+          v-if="filtered || partial"
+          class="mb-4 text-sm text-muted-foreground"
+        >
+          Đang lọc hoặc phân trang: kéo thả tạm tắt để giữ đúng thứ tự. Bạn vẫn
+          có thể đổi trạng thái qua menu.<Button
+            v-if="filtered"
+            variant="link"
+            @click="clearFilters"
+            >Xóa bộ lọc</Button
+          >
         </p>
-        <LabelManager />
-        <BulkTasks />
         <div class="board-grid">
           <section
             v-for="column in columns"
@@ -472,23 +559,25 @@ onBeforeUnmount(() => {
           >
             <div class="mb-4 flex items-center justify-between">
               <h2 class="text-sm font-semibold">
-                {{ column.label }} · {{ cards(column.id).length }}
+                {{ column.label }} · {{ count(column.id) }}
               </h2>
               <Button
                 v-if="canWrite"
                 variant="ghost"
                 :aria-label="`Thêm vào ${column.label}`"
                 @click="add(column.id)"
-                >+</Button
-              >
+                ><Plus :size="18" aria-hidden="true"
+              /></Button>
             </div>
             <draggable
               :model-value="cards(column.id)"
               item-key="id"
               group="online-tasks"
               handle=".drag-handle"
-              :animation="appConfig.dragAnimationMs"
-              :disabled="!canWrite || filtered"
+              :animation="
+                reducedMotion === 'reduce' ? 0 : appConfig.dragAnimationMs
+              "
+              :disabled="!canWrite || filtered || partial || store.refreshing"
               ghost-class="drag-ghost"
               class="min-h-24 space-y-3 pb-2"
               @start="dragging = true"
@@ -508,7 +597,9 @@ onBeforeUnmount(() => {
                   "
                   :checklist="element.checklist"
                   :task="displayTask(element)"
-                  :drag-disabled="!canWrite || filtered"
+                  :drag-disabled="
+                    !canWrite || filtered || partial || store.refreshing
+                  "
                   :read-only="!canWrite"
                   @edit="edit(element)"
                   @move="move" /></template
@@ -519,6 +610,23 @@ onBeforeUnmount(() => {
             >
               {{ filtered ? 'Không có kết quả phù hợp' : 'Chưa có công việc' }}
             </p>
+            <ServerPagination
+              v-if="store.snapshot.pages?.[column.id]"
+              compact
+              :show-size="true"
+              :page="store.snapshot.pages[column.id]!.page"
+              :page-size="store.query.pageSize"
+              :total="count(column.id)"
+              :disabled="
+                store.pending ||
+                store.loading ||
+                store.refreshing ||
+                !!store.uncertain ||
+                !online
+              "
+              :label="'Phân trang ' + column.label"
+              @change="(page, size) => changePage(column.id, page, size)"
+            />
           </section>
         </div>
       </template>
