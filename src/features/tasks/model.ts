@@ -32,7 +32,14 @@ export const activitySchema = z.object({
     z.object({ before: z.unknown(), after: z.unknown() }),
   ),
 })
+const pageSchema = z.object({
+  page: z.number().int().positive(),
+  pageSize: z.number().int().min(1).max(50),
+  total: z.number().int().nonnegative(),
+})
 export const threadSchema = z.object({
+  comment_page: pageSchema.optional(),
+  activity_page: pageSchema.optional(),
   can_comment: z.boolean(),
   comments: commentSchema.array(),
   activity: activitySchema.array(),
@@ -41,6 +48,9 @@ export type TaskThread = z.infer<typeof threadSchema>
 export type TaskComment = z.infer<typeof commentSchema>
 export type TaskActivity = z.infer<typeof activitySchema>
 export type ThreadCursor = {
+  commentPage?: number
+  activityPage?: number
+  pageSize?: number
   commentDate?: string
   commentId?: string
   activityId?: string

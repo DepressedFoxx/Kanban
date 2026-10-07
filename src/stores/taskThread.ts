@@ -14,6 +14,8 @@ import {
   type TaskActivity,
 } from '@/features/tasks/model'
 export const useTaskThreadStore = defineStore('task-thread', () => {
+  const commentPage = ref({ page: 1, pageSize: 20, total: 0 })
+  const activityPage = ref({ page: 1, pageSize: 20, total: 0 })
   const comments = ref<TaskComment[]>([]),
     activity = ref<TaskActivity[]>([]),
     canComment = ref(false)
@@ -37,6 +39,8 @@ export const useTaskThreadStore = defineStore('task-thread', () => {
   let generation = 0,
     scope = ''
   function clear() {
+    commentPage.value = { page: 1, pageSize: 20, total: 0 }
+    activityPage.value = { page: 1, pageSize: 20, total: 0 }
     generation++
     scope = ''
     comments.value = []
@@ -101,6 +105,8 @@ export const useTaskThreadStore = defineStore('task-thread', () => {
     task: string,
     mode: 'latest' | 'comments' | 'activity' = 'latest',
     background = false,
+    nextPage?: number,
+    nextSize?: number,
   ) {
     const key = board + ':' + task
     if (scope !== key) {
@@ -119,6 +125,15 @@ export const useTaskThreadStore = defineStore('task-thread', () => {
       lastActivity = activity.value.at(-1)
     try {
       const result = await tasksApi.thread(board, task, {
+        commentPage:
+          mode === 'comments'
+            ? (nextPage ?? commentPage.value.page + 1)
+            : commentPage.value.page,
+        activityPage:
+          mode === 'activity'
+            ? (nextPage ?? activityPage.value.page + 1)
+            : activityPage.value.page,
+        pageSize: nextSize ?? commentPage.value.pageSize,
         ...(mode === 'comments' && lastComment
           ? { commentDate: lastComment.created_at, commentId: lastComment.id }
           : {}),
@@ -131,6 +146,13 @@ export const useTaskThreadStore = defineStore('task-thread', () => {
       denied.value = false
       syncError.value = ''
       lastSyncedAt.value = new Date().toISOString()
+      if (result.comment_page && result.activity_page) {
+        comments.value = result.comments
+        activity.value = result.activity
+        commentPage.value = result.comment_page
+        activityPage.value = result.activity_page
+        return true
+      }
       if (mode !== 'activity') {
         if (mode === 'comments' || !comments.value.length)
           moreComments.value = result.comments.length === taskConfig.pageSize
@@ -264,6 +286,8 @@ export const useTaskThreadStore = defineStore('task-thread', () => {
     return send(uncertain.value)
   }
   return {
+    commentPage,
+    activityPage,
     comments,
     activity,
     canComment,

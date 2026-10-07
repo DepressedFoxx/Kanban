@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import RefreshButton from '@/components/RefreshButton.vue'
 import { onBeforeUnmount, ref, watch } from 'vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -147,13 +148,13 @@ async function download(file: Attachment) {
       <h3 class="font-semibold">
         File đính kèm <span v-if="list">({{ list.items.length }}/20)</span>
       </h3>
-      <Button
+      <RefreshButton
         size="sm"
         variant="ghost"
         :disabled="loading || busy"
         @click="load"
-        >Tải lại file</Button
-      >
+        label="Tải lại file"
+      />
     </div>
     <p class="text-xs text-muted-foreground">
       PNG, JPEG, WebP, PDF, TXT · Tối đa 10 MiB/file. Không xem trước nội dung.

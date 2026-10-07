@@ -29,12 +29,12 @@ export const tasksApi = {
       p_reason: change.reason,
     }),
   thread: (board: string, task: string, cursor: ThreadCursor = {}) =>
-    rpc('task_thread', {
+    rpc('task_thread_page', {
       p_board: board,
       p_task: task,
-      p_before_comment: cursor.commentDate ?? null,
-      p_before_comment_id: cursor.commentId ?? null,
-      p_before_activity: cursor.activityId ?? null,
+      p_comment_page: cursor.commentPage ?? 1,
+      p_activity_page: cursor.activityPage ?? 1,
+      p_page_size: cursor.pageSize ?? 20,
     }),
   comment: (board: string, task: string, id: string, body: string) =>
     rpc('task_comment_add', {

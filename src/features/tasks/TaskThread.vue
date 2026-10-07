@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import RefreshButton from '@/components/RefreshButton.vue'
+import ServerPagination from '@/components/ServerPagination.vue'
 import { computed, ref, watch, onBeforeUnmount } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import {
@@ -82,6 +84,9 @@ watch(
     editing.value = null
     deleting.value = null
     reason.value = ''
+    store.commentPage.page = 1
+    store.activityPage.page = 1
+    void store.load(props.board, props.task, 'latest', true)
   },
 )
 const { online } = useCollab(
@@ -232,7 +237,7 @@ onBeforeUnmount(() => {
           :aria-pressed="tab === 'activity'"
           @click="tab = 'activity'"
           >Lịch sử</Button
-        ><Button
+        ><RefreshButton
           type="button"
           variant="ghost"
           :disabled="
@@ -243,8 +248,8 @@ onBeforeUnmount(() => {
             !online
           "
           @click="store.load(board, task)"
-          >Tải lại thảo luận</Button
-        >
+          label="Tải lại thảo luận"
+        />
       </div>
       <SyncStatus
         :value="{
@@ -404,14 +409,17 @@ onBeforeUnmount(() => {
             </form>
           </li>
         </ul>
-        <Button
-          v-if="store.moreComments"
-          variant="outline"
-          class="mt-3"
-          :disabled="store.loading || store.pending"
-          @click="store.load(board, task, 'comments')"
-          >Bình luận cũ hơn</Button
-        >
+        <ServerPagination
+          :page="store.commentPage.page"
+          :page-size="store.commentPage.pageSize"
+          :total="store.commentPage.total"
+          :disabled="busy || store.loading || store.refreshing || !!editing"
+          label="Phân trang bình luận"
+          @change="
+            (page, size) =>
+              store.load(board, task, 'comments', false, page, size)
+          "
+        />
       </template>
       <template v-else>
         <p
@@ -448,14 +456,17 @@ onBeforeUnmount(() => {
             </ul>
           </li>
         </ul>
-        <Button
-          v-if="store.moreActivity"
-          variant="outline"
-          class="mt-3"
-          :disabled="store.loading || store.pending"
-          @click="store.load(board, task, 'activity')"
-          >Lịch sử cũ hơn</Button
-        >
+        <ServerPagination
+          :page="store.activityPage.page"
+          :page-size="store.activityPage.pageSize"
+          :total="store.activityPage.total"
+          :disabled="busy || store.loading || store.refreshing"
+          label="Phân trang lịch sử task"
+          @change="
+            (page, size) =>
+              store.load(board, task, 'activity', false, page, size)
+          "
+        />
       </template>
     </section>
     <AlertDialog
